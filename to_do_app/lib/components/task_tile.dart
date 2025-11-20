@@ -1,0 +1,461 @@
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:lottie/lottie.dart';
+import 'package:to_do_app/components/create_task_sheet.dart';
+import 'package:to_do_app/utils/date_time_utils.dart';
+
+class TaskTile extends StatefulWidget {
+  final int index;
+  final VoidCallback disableCompleted;
+  final Function(int, Map<String, dynamic>)? onEdit;
+  final bool isStarred;
+  final String taskName;
+  final bool taskCompleted;
+  final Function(int, bool?)? onChanged;
+  final Function(int)? deleteFunction;
+  final String taskNote;
+  final DateTime? dueTime;
+  final DateTime? dueDate;
+  final String taskCategory;
+  final String taskPriority;
+  final String repeatType;
+  final int remainderAmount;
+  final String remainderType;
+  final List<String> repeatTypes;
+  final List<String> priorityTypes;
+  final List<String> remainderTypes;
+  final List<String> categoryTypes;
+  final List<Map<String, dynamic>>? initialSubtasks;
+
+  const TaskTile({
+    super.key,
+    required this.disableCompleted,
+    required this.initialSubtasks,
+    required this.index,
+    required this.isStarred,
+    required this.onEdit,
+    required this.taskName,
+    required this.taskCompleted,
+    required this.onChanged,
+    required this.deleteFunction,
+    required this.repeatTypes,
+    required this.priorityTypes,
+    required this.remainderTypes,
+    required this.categoryTypes,
+    this.taskNote = "",
+    this.dueTime,
+    this.dueDate,
+    this.taskCategory = "None",
+    this.taskPriority = "Low",
+    this.repeatType = "daily",
+    this.remainderAmount = 0,
+    this.remainderType = "minutes",
+  });
+
+  @override
+  State<TaskTile> createState() => _TaskTileState();
+}
+
+class _TaskTileState extends State<TaskTile> {
+  late bool _completed; // For animation when marking as completed
+  bool _isExpanded = false;
+  bool _removeTile = false;
+
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _showStars = false;
+
+  void _playCheckSound() async {
+    await _audioPlayer.play(AssetSource('sounds/success.mp3'));
+  }
+
+  void _playStarAnimation() {
+    setState(() => _showStars = true);
+    Future.delayed(
+      Duration(seconds: 1),
+      () => setState(() => _showStars = false),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _completed = widget.taskCompleted;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // DateTime dueDate=DateTimeUtilsHelper.parseDate(widget.dueDate);
+
+    final combinedTime = DateTimeUtilsHelper.combineDateAndTime(
+      widget.dueDate,
+      widget.dueTime,
+    );
+    final localTime = DateTimeUtilsHelper.toLocalUsingTz(combinedTime);
+    print("local $localTime");
+    return Center(
+      child: AnimatedSize(
+        //alignment: Alignment.topCenter,
+        clipBehavior: Clip.none,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOutCubic, // super smooth easing
+        //animationStyle: AnimationStyle(curve: Curves.easeInOutCubic),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 6),
+          child: Container(
+            width: _removeTile ? 360 : double.infinity,
+            //height: 85,
+            //margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            //padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.secondary,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 5,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Slidable(
+              endActionPane: ActionPane(
+                motion: const StretchMotion(),
+                children: [
+                  SlidableAction(
+                    onPressed:
+                        (context) => widget.deleteFunction?.call(widget.index),
+                    icon: Icons.delete,
+                    backgroundColor: Colors.red.shade300,
+                    borderRadius: BorderRadius.circular(12),
+                    //padding: const EdgeInsets.symmetric(vertical: 50),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Theme.of(context).colorScheme.secondary,
+                borderRadius: BorderRadius.circular(15),
+                child: ExpansionTile(
+                  initiallyExpanded: _isExpanded,
+                  onExpansionChanged: (expanded) {
+                    debugPrint(
+                      'Tile ${widget.index} expansion changed: $expanded',
+                    );
+                    setState(() => _isExpanded = expanded);
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  collapsedShape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  tilePadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  childrenPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  title: Row(
+                    children: [
+                      Stack(
+                        children: [
+                          InkWell(
+                            borderRadius: BorderRadius.circular(
+                              4,
+                            ), // optional, matches checkbox
+                            onTap: () {
+                              bool newValue = !widget.taskCompleted;
+                              setState(() {
+                                // widget.taskCompleted = newValue;
+                              });
+                              widget.onChanged?.call(widget.index, newValue);
+                            },
+                            child: Checkbox(
+                              value: _completed,
+                              onChanged: (value) async {
+                                if (value == true) {
+                                  widget.disableCompleted.call();
+                                  // 1️⃣ Update local state immediately so checkmark is visible
+                                  setState(() {
+                                    _completed =
+                                        true; // create this local variable below
+                                    _removeTile = true;
+                                    _showStars = true;
+                                  });
+                                  _playCheckSound();
+                                  _playStarAnimation();
+
+                                  // 2️⃣ Wait for UI to repaint
+                                  await Future.delayed(
+                                    const Duration(milliseconds: 1000),
+                                  );
+
+                                  // 3️⃣ Then call parent to actually remove the tile
+                                  widget.onChanged?.call(widget.index, value);
+                                  widget.disableCompleted.call();
+                                } else {
+                                  widget.disableCompleted.call();
+                                  // 1️⃣ Update local state immediately so checkmark is visible
+                                  setState(() {
+                                    _completed =
+                                        false; // create this local variable below
+                                    //widget.taskCompleted = false;
+                                    _removeTile = true;
+                                  });
+
+                                  // 2️⃣ Wait for UI to repaint
+                                  await Future.delayed(
+                                    const Duration(milliseconds: 1000),
+                                  );
+
+                                  // 3️⃣ Then call parent to actually remove the tile
+                                  widget.onChanged?.call(widget.index, value);
+                                  widget.disableCompleted.call();
+                                }
+                              },
+
+                              activeColor:
+                                  Theme.of(context).colorScheme.onSecondary,
+                            ),
+                          ),
+                          if (_showStars)
+                            Positioned(
+                              top: -22,
+                              left: -22,
+                              child: Lottie.asset(
+                                'assets/lottie/Success1.json',
+                                width: 100,
+                                height: 80,
+                                repeat: false,
+                                onLoaded: (composition) {
+                                  // Optionally handle when the animation is loaded
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          widget.taskName,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontSize: 18,
+                            // decoration:
+                            //     widget.taskCompleted
+                            //         ? TextDecoration.lineThrough
+                            //         : null,
+                          ),
+                        ),
+                      ),
+                      if (widget.isStarred)
+                        Icon(
+                          Icons.star,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      PopupMenuButton<String>(
+                        borderRadius: BorderRadius.circular(20),
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: _handleMenuSelection,
+                        itemBuilder:
+                            (context) => [
+                              PopupMenuItem(
+                                value: 'Star',
+                                child:
+                                    widget.isStarred
+                                        ? const Text('Unstar')
+                                        : const Text('Star'),
+                              ),
+                              const PopupMenuItem(
+                                value: 'Edit',
+                                child: Text('Edit'),
+                              ),
+                            ],
+                      ),
+                    ],
+                  ),
+                  children: [
+                    GestureDetector(
+                      onTap:
+                          () => showModalBottomSheet(
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(20),
+                              ),
+                            ),
+                            backgroundColor: Colors.transparent,
+                            context: context,
+                            builder:
+                                (context) => CreateTaskSheet(
+                                  taskName: widget.taskName,
+                                  taskNote: widget.taskNote,
+                                  initialSubtasks: widget.initialSubtasks ?? [],
+                                  buttonText: "Save changes",
+                                  taskNameController: TextEditingController(
+                                    text: widget.taskName,
+                                  ),
+                                  taskNoteController: TextEditingController(
+                                    text: widget.taskNote,
+                                  ),
+                                  initialCategory: widget.taskCategory,
+                                  initialPriority: widget.taskPriority,
+                                  initialRepeatType: widget.repeatType,
+                                  initialRemainderAmount:
+                                      widget.remainderAmount,
+                                  initialRemainderType: widget.remainderType,
+                                  initialDueDate: widget.dueDate,
+                                  initialDueTime: widget.dueTime,
+                                  remainderAmountController:
+                                      TextEditingController(
+                                        text:
+                                            widget.remainderAmount
+                                                .toString()
+                                                .trim(),
+                                      ),
+                                  onSave: (taskDetails) {
+                                    if (widget.onEdit != null) {
+                                      widget.onEdit!(widget.index, taskDetails);
+                                    }
+                                  },
+                                  repeatTypes: widget.repeatTypes,
+                                  priorityTypes: widget.priorityTypes,
+                                  remainderTypes: widget.remainderTypes,
+                                  categoryTypes: widget.categoryTypes,
+                                ),
+                          ),
+                      child: Column(
+                        children: [
+                          const Divider(),
+                          if (widget.taskNote.isNotEmpty)
+                            ListTile(
+                              leading: const Icon(Icons.note_outlined),
+                              title: Text(widget.taskNote),
+                            ),
+                          if (widget.dueDate != null)
+                            ListTile(
+                              leading: const Icon(Icons.calendar_today),
+                              title: Text(
+                                "Due Date: ${DateTimeUtilsHelper.formatDate(localTime)}",
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          if (widget.dueTime != null)
+                            ListTile(
+                              leading: const Icon(Icons.access_time),
+                              title: Text(
+                                "Due Time: ${DateTimeUtilsHelper.formatTime(localTime)}",
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                          ListTile(
+                            leading: const Icon(Icons.flag),
+                            title: Text(
+                              "Priority: ${widget.taskPriority}",
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.category),
+                            title: Text(
+                              "Category: ${widget.taskCategory}",
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.repeat),
+                            title: Text(
+                              "Repeat: ${widget.repeatType}",
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handleMenuSelection(String value) {
+    if (value == "Star") {
+      widget.onEdit?.call(widget.index, {
+        'isStarred': (!widget.isStarred).toString(),
+        'taskName': widget.taskName,
+        'taskNote': widget.taskNote,
+        'dueDate': DateTimeUtilsHelper.formatDate(widget.dueDate),
+        'dueTime': DateTimeUtilsHelper.formatTime(widget.dueTime),
+        'taskCategory': widget.taskCategory,
+        'taskPriority': widget.taskPriority,
+        'repeatType': widget.repeatType,
+        'remainderAmount': widget.remainderAmount,
+        'remainderType': widget.remainderType,
+        'createdAt': DateTime.now().toString(),
+        'subTasks': widget.initialSubtasks ?? [],
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${widget.taskName} was ${!widget.isStarred ? "starred" : "unstarred"}',
+          ),
+        ),
+      );
+    } else if (value == "Edit") {
+      showModalBottomSheet(
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        backgroundColor: Colors.transparent,
+        context: context,
+        builder:
+            (context) => CreateTaskSheet(
+              taskName: widget.taskName,
+              taskNote: widget.taskNote,
+              initialSubtasks: widget.initialSubtasks ?? [],
+              buttonText: "Save changes",
+              taskNameController: TextEditingController(text: widget.taskName),
+              taskNoteController: TextEditingController(text: widget.taskNote),
+              initialCategory: widget.taskCategory,
+              initialPriority: widget.taskPriority,
+              initialRepeatType: widget.repeatType,
+              initialRemainderAmount: widget.remainderAmount,
+              initialRemainderType: widget.remainderType,
+              initialDueDate: widget.dueDate,
+              initialDueTime: widget.dueTime,
+              remainderAmountController: TextEditingController(
+                text: widget.remainderAmount.toString().trim(),
+              ),
+              onSave: (taskDetails) {
+                if (widget.onEdit != null) {
+                  widget.onEdit!(widget.index, taskDetails);
+                }
+              },
+              repeatTypes: widget.repeatTypes,
+              priorityTypes: widget.priorityTypes,
+              remainderTypes: widget.remainderTypes,
+              categoryTypes: widget.categoryTypes,
+            ),
+      );
+    }
+  }
+}
