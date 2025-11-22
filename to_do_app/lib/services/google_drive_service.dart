@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class GoogleDriveService {
+  // This is where Hive stores boxes by default
   static const webClientId =
       '879200055223-f40a49a8tvse1ca2sngrudqh8r5f3ccg.apps.googleusercontent.com';
   static const androidClientId =
@@ -59,34 +61,67 @@ class GoogleDriveService {
   /// --------------------------
   ///  LIST FILES IN DRIVE
   /// --------------------------
-  static Future<List<drive.File>> listFiles() async {
-    //final apiMap = await initializeSignIn();
-    //final api=apiMap?["api"] as drive.DriveApi?;
-    if (_driveApi == null) return [];
+  static Future<String?> getFileId(String folderId) async {
+    String fileName = "mybox.hive";
+    if (_driveApi == null) return null;
 
     final result = await _driveApi!.files.list(
+      q: "name = '$fileName' and '$folderId' in parents and trashed = false",
       spaces: 'drive',
-      $fields: 'files(id, name, mimeType, size)',
+      $fields: 'files(id, name)',
     );
 
-    return result.files ?? [];
+    if (result.files != null && result.files!.isNotEmpty) {
+      print(
+        "File found: ${result.files!.first.name} (ID: ${result.files!.first.id})",
+      );
+
+      return result.files!.first.id; // Return the ID of the fi
+    }
+    print("File not found: $fileName");
+    return null; // File not found
   }
 
   /// --------------------------
   ///  UPLOAD FILE
   /// --------------------------
-  static Future<String?> uploadFile(File file) async {
-    //final api = await initializeSignIn();
+  static Future<String?> uploadFileToFolder(File file, String folderId) async {
     if (_driveApi == null) return null;
 
-    final fileMeta = drive.File()..name = file.path.split('/').last;
+    final fileName = file.path.split('/').last;
 
-    final uploaded = await _driveApi!.files.create(
-      fileMeta,
-      uploadMedia: drive.Media(file.openRead(), file.lengthSync()),
-    );
+    try {
+      // 1️⃣ Check if file already exists in the folder
+      final existingFile = await getFileId(folderId);
+      print("--------------existing file id = $existingFile");
 
-    return uploaded.id;
+      final media = drive.Media(file.openRead(), file.lengthSync());
+
+      if (existingFile != null) {
+        // File exists → update it
+        final updated = await _driveApi!.files.update(
+          drive.File()..name = fileName,
+
+          existingFile,
+          uploadMedia: media,
+        );
+        print("File updated: ${updated.name} (ID: ${updated.id})");
+        return updated.id;
+      } else {
+        // File does not exist → create it in the folder
+        final uploaded = await _driveApi!.files.create(
+          drive.File()
+            ..name = fileName
+            ..parents = [folderId],
+          uploadMedia: media,
+        );
+        print("File uploaded: ${uploaded.name} (ID: ${uploaded.id})");
+        return uploaded.id;
+      }
+    } catch (e) {
+      print("Error uploading file: $e");
+      return null;
+    }
   }
 
   /// --------------------------
@@ -108,6 +143,7 @@ class GoogleDriveService {
 
     await media.stream.pipe(sink);
     await sink.close();
+    print("File downloaded to: ${file.path}");
 
     return file;
   }
@@ -143,22 +179,22 @@ class GoogleDriveService {
   /// --------------------------
   ///  UPLOAD FILE INTO FOLDER
   /// --------------------------
-  static Future<String?> uploadToFolder(File file, String folderId) async {
-    //final api = await initializeSignIn();
-    if (_driveApi == null) return null;
+  // static Future<String?> uploadToFolder(File file, String folderId) async {
+  //   //final api = await initializeSignIn();
+  //   if (_driveApi == null) return null;
 
-    final fileMeta =
-        drive.File()
-          ..name = file.path.split('/').last
-          ..parents = [folderId];
+  //   final fileMeta =
+  //       drive.File()
+  //         ..name = file.path.split('/').last
+  //         ..parents = [folderId];
 
-    final uploaded = await _driveApi!.files.create(
-      fileMeta,
-      uploadMedia: drive.Media(file.openRead(), file.lengthSync()),
-    );
+  //   final uploaded = await _driveApi!.files.create(
+  //     fileMeta,
+  //     uploadMedia: drive.Media(file.openRead(), file.lengthSync()),
+  //   );
 
-    return uploaded.id;
-  }
+  //   return uploaded.id;
+  // }
 
   /// --------------------------
   ///  DELETE FILE

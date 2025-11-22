@@ -60,6 +60,7 @@ dependencies:
   supabase_flutter: ^2.10.3
   #msal_flutter: ^2.0.1
   msal_auth: ^3.3.0
+  path_provider: ^2.1.5
   
  
 

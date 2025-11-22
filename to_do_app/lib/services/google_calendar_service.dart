@@ -383,7 +383,7 @@ class GoogleCalendarService {
       final existingIndex = db.calTasks.indexWhere(
         (task) =>
             task.length > 15 &&
-            ((task[14] == event.id && task[15] == event.id) ||
+            ((task[14] == calendarId && task[15] == event.id) ||
                 task[16] == event.id),
       );
 
@@ -410,6 +410,7 @@ class GoogleCalendarService {
         print('✏️ Updated existing task: ${event.summary}');
         continue;
       }
+      print("existing = $existingIndex");
 
       // Add new task
       db.calTasks.add([

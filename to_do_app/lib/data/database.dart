@@ -25,7 +25,7 @@ class ToDoDataBase {
 
   Map<String, dynamic> settings = {"timeZone": ""};
 
-  final _mybox = Hive.box("mybox");
+  Box get _mybox => Hive.box("mybox");
 
   // Future<void> getDeviceTimeZone() async {
   //   final timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
@@ -71,11 +71,14 @@ class ToDoDataBase {
   }
 
   void loadData() {
+    print("🗄️ Loading database...");
     // Load to-do list
     final storedToDo = _mybox.get("TODOLIST");
     if (storedToDo is List) {
       toDoList = storedToDo.map((item) => item as List<dynamic>).toList();
     }
+
+    print("ToDo Tasks: $toDoList");
 
     // Load categories
     final storedCategories = _mybox.get("CATEGORIES");
@@ -115,6 +118,7 @@ class ToDoDataBase {
     if (storedCalTasks is List) {
       calTasks = storedCalTasks.map((item) => item as List<dynamic>).toList();
     }
+    print("🗄️ Database loaded");
   }
 
   void updateDataBase() {

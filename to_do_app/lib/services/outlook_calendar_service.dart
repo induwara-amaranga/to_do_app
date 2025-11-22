@@ -13,7 +13,7 @@ class OutlookCalendarService {
   static const _clientId = '6450d522-3a1c-4005-ae93-1fdc7f91aea2';
   static const _redirectUri =
       "msauth://com.example.to_do_app/Oust7aZi9rTbGkNnTUHkeg3V6WQ%3D";
-  static const _scopes = ['User.Read', 'Calendars.ReadWrite'];
+  //static const _scopes = ['User.Read', 'Calendars.ReadWrite'];
 
   //static late PublicClientApplication _pca;
   static String? _accessToken;

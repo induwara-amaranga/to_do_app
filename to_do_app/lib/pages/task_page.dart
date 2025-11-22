@@ -31,8 +31,10 @@ import 'package:uuid/uuid.dart';
 class TaskPage extends StatefulWidget {
   final ToDoDataBase db;
   final bool updateMissedTasks;
+  final String? filePath;
   const TaskPage({
     super.key,
+    required this.filePath,
     required this.updateMissedTasks,
     required this.db,
   });
@@ -463,10 +465,12 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     context.watch<CalendarSyncProvider>();
 
     query = context.watch<SearchingProvider>().query;
+    print("rebuilding task page ${db.toDoList}");
 
     return Scaffold(
       drawer: MyDrawer(
-        onIcsImported: () {
+        filePath: widget.filePath,
+        onImported: () {
           db.loadData();
           print(
             "🔄 Drawer import callback - DB reloaded: ${db.categories} tasks",

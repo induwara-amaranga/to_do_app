@@ -1,10 +1,12 @@
 import "package:flutter/material.dart";
+import "package:to_do_app/data/database.dart";
 import "package:to_do_app/pages/import_ics_page.dart";
 import "package:to_do_app/pages/sign_in_page.dart";
 
 class MyDrawer extends StatelessWidget {
-  final VoidCallback onIcsImported;
-  const MyDrawer({super.key, required this.onIcsImported});
+  final VoidCallback onImported;
+  final String? filePath;
+  const MyDrawer({super.key, required this.filePath, required this.onImported});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +27,14 @@ class MyDrawer extends StatelessWidget {
                   onTap:
                       () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const SignInPage()),
+                        MaterialPageRoute(
+                          builder:
+                              (_) => SignInPage(
+                                db: ToDoDataBase(),
+                                filePath: filePath,
+                                onImported: onImported,
+                              ),
+                        ),
                       ),
                   child: Center(
                     child: CircleAvatar(
@@ -90,7 +99,7 @@ class MyDrawer extends StatelessWidget {
                     // Instead, return the result to TaskPage
                     if (imported == true) {
                       // This can be ignored; TaskPage will handle it
-                      onIcsImported();
+                      onImported();
                     }
                   },
                 ),

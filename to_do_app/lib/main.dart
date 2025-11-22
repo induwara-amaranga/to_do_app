@@ -23,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final ToDoDataBase db = ToDoDataBase();
+String? path;
 
 tz.Location? findLocalLocation() {
   final now = DateTime.now();
@@ -73,6 +74,7 @@ void main() async {
   );
   await Hive.initFlutter();
   var box = await Hive.openBox("mybox");
+  path = box.path!;
   //await box.clear();
   final _myBox = Hive.box("mybox");
   if (_myBox.get("TODOLIST") == null && _myBox.get("CATEGORIES") == null) {
@@ -122,7 +124,9 @@ class MyApp extends StatelessWidget {
       theme: Provider.of<ThemeProvider>(context).themeData,
       initialRoute: '/',
       routes: {
-        '/': (context) => TaskPage(updateMissedTasks: true, db: db),
+        '/':
+            (context) =>
+                TaskPage(updateMissedTasks: true, db: db, filePath: path),
         '/savedTimetables': (context) => const SavedTimetablesPage(),
         '/manageCategories': (context) => const ManageCategoriesPage(),
         '/calendarSync': (context) => CalenderSyncPage(db: ToDoDataBase()),
