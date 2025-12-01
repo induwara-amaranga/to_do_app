@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
@@ -19,6 +20,37 @@ class GoogleDriveService {
 
   static drive.DriveApi? _driveApi;
   GoogleSignInAccount? _account;
+  static GoogleSignInAccount? account;
+
+  static final storage = FlutterSecureStorage();
+
+  static Future<bool> restoreLastSession() async {
+    print("🔄 Trying to restore previous Google session...");
+
+    final auth = await storage.read(key: 'drive_auth_token');
+
+    if (auth == null) {
+      print("❌ No stored token. User must sign in once.");
+      return false;
+    }
+
+    final headers = {'Authorization': auth, 'X-Goog-AuthUser': '0'};
+
+    try {
+      final client = _GoogleAuthClient(headers);
+
+      _driveApi = drive.DriveApi(client);
+
+      // test token
+      //await _driveApi!.files.list(pageSize: 1);
+
+      print("✅ Restored Drive session without sign-in!");
+      return true;
+    } catch (e) {
+      print("❌ Saved token expired: $e");
+      return false;
+    }
+  }
 
   /// --------------------------
   ///  SIGN IN & INIT DRIVE API
@@ -31,31 +63,52 @@ class GoogleDriveService {
       serverClientId: webClientId,
     );
 
-    // 2️⃣ Start the authentication flow
-    final GoogleSignInAccount account = await GoogleSignIn.instance
-        .authenticate(scopeHint: ['https://www.googleapis.com/auth/calendar']);
+    // 2️⃣ Attempt SILENT sign-in first
+    print("Trying silent sign-in...");
+    account = await GoogleSignIn.instance.attemptLightweightAuthentication();
 
-    // 3️⃣ Get OAuth headers to use with Google APIs
-    final headers = await account.authorizationClient.authorizationHeaders([
-      drive.DriveApi.driveFileScope, // access only files your app creates
-      // drive.DriveApi.driveScope,   // use this only if you need full Drive access
-    ], promptIfNecessary: true);
+    if (account != null) {
+      print("✅ Silent sign-in success: ${account!.email}");
+    } else {
+      print("❌ Silent sign-in failed,asking user to sign in...");
+      // 3️⃣ Fallback to UI sign-in
+      account = await GoogleSignIn.instance.authenticate(
+        scopeHint: ['https://www.googleapis.com/auth/calendar'],
+      );
+    }
 
-    print('✅ Signed in as: ${account.email}');
-    print('🔑 Access token: ${headers?['Authorization']}');
+    // // 2️⃣ Start the authentication flow
+    // account = await GoogleSignIn.instance.authenticate(
+    //   scopeHint: ['https://www.googleapis.com/auth/calendar'],
+    // );
+    if (account != null) {
+      // 3️⃣ Get OAuth headers to use with Google APIs
+      final headers = await account!.authorizationClient.authorizationHeaders([
+        drive.DriveApi.driveFileScope, // access only files your app creates
+        // drive.DriveApi.driveScope,   // use this only if you need full Drive access
+      ], promptIfNecessary: true);
 
-    if (headers == null) {
-      print('User not signed in');
+      print('✅ Signed in as: ${account!.email}');
+      print('🔑 Access token: ${headers?['Authorization']}');
+      await storage.write(
+        key: 'drive_auth_token',
+        value: headers?['Authorization'],
+      );
+      if (headers == null) {
+        print('User not signed in');
+        return null;
+      }
+      final client = _GoogleAuthClient(headers);
+
+      _driveApi = drive.DriveApi(client);
+      //final _driveApi = await getCalendarApi(headers);
+      print('✅ Google Calendar API initialized');
+      //_calendarApi = calendarApi;
+      return account;
+    } else {
+      print('❌ Sign-in failed');
       return null;
     }
-    final client = _GoogleAuthClient(headers);
-
-    _driveApi = drive.DriveApi(client);
-
-    //final _driveApi = await getCalendarApi(headers);
-    print('✅ Google Calendar API initialized');
-    //_calendarApi = calendarApi;
-    return account;
   }
 
   /// --------------------------

@@ -9,7 +9,7 @@ class ToDoDataBase {
   List<String> categories = [];
 
   // In-memory Sets
-  Map<String, Set<String>> syncFromCalendars = {
+  Map<String, Set<String>> viewOnlyCalendars = {
     //View only
     "local": <String>{},
     "google": <String>{},
@@ -24,6 +24,11 @@ class ToDoDataBase {
   };
 
   Map<String, dynamic> settings = {"timeZone": ""};
+
+  Map<String, dynamic> accountDetails = {
+    "userName": "none",
+    "profilePicture": "none",
+  };
 
   Box get _mybox => Hive.box("mybox");
 
@@ -61,7 +66,7 @@ class ToDoDataBase {
       //   "",
       //   "",
       //   "",
-      //   //false,
+      //   "initial",
       // ],
     ];
     categories = ["None", "Work", "Personal", "Study", "Others"];
@@ -86,10 +91,10 @@ class ToDoDataBase {
       categories = storedCategories.cast<String>();
     }
 
-    // Load syncFromCalendars (convert back to Sets)
+    // Load viewOnlyCalendars (convert back to Sets)
     final storedFromCalendars = _mybox.get("SYNC_FROM_CALENDARS");
     if (storedFromCalendars is Map) {
-      syncFromCalendars = {
+      viewOnlyCalendars = {
         "local": (storedFromCalendars["local"] ?? []).cast<String>().toSet(),
         "google": (storedFromCalendars["google"] ?? []).cast<String>().toSet(),
         "outlook":
@@ -112,6 +117,12 @@ class ToDoDataBase {
       );
     }
     print("Loaded settings: $settings");
+    final storedAccount = _mybox.get("ACCOUNT");
+    if (storedAccount is Map) {
+      accountDetails = Map<String, dynamic>.from(
+        storedAccount.cast<String, dynamic>(),
+      );
+    }
 
     // ✅ FIX: Load calendar tasks correctly
     final storedCalTasks = _mybox.get("CAL_TASKS");
@@ -123,22 +134,23 @@ class ToDoDataBase {
 
   void updateDataBase() {
     // Convert Sets to Lists for Hive storage
-    final hiveSyncFromCalendars = {
-      "local": syncFromCalendars["local"]!.toList(),
-      "google": syncFromCalendars["google"]!.toList(),
-      "outlook": syncFromCalendars["outlook"]!.toList(),
+    final hiveviewOnlyCalendars = {
+      "local": viewOnlyCalendars["local"]!.toList(),
+      "google": viewOnlyCalendars["google"]!.toList(),
+      "outlook": viewOnlyCalendars["outlook"]!.toList(),
     };
 
     _mybox.put("TODOLIST", toDoList);
     _mybox.put("CATEGORIES", categories);
-    _mybox.put("SYNC_FROM_CALENDARS", hiveSyncFromCalendars);
+    _mybox.put("SYNC_FROM_CALENDARS", hiveviewOnlyCalendars);
     _mybox.put("SYNC_TO_CALENDARS", syncToCalendars);
     _mybox.put("CAL_TASKS", calTasks);
     _mybox.put("SETTINGS", settings);
+    _mybox.put("ACCOUNT", accountDetails);
 
     print("🗄️ Database updated");
-    print("syncFromCalendars (in-memory Sets): $syncFromCalendars");
-    print("syncFromCalendars (Hive Lists): $hiveSyncFromCalendars");
+    print("viewOnlyCalendars (in-memory Sets): $viewOnlyCalendars");
+    print("viewOnlyCalendars (Hive Lists): $hiveviewOnlyCalendars");
     print(toDoList);
     print("✅$calTasks");
   }

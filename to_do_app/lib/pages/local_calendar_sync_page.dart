@@ -143,10 +143,10 @@ class _LocalCalendarSyncPageState extends State<LocalCalendarSyncPage> {
                           await LocalCalendarService.createNewCalendar(
                             calendars,
                           );
-                      //widget.db.syncFromCalendars["local"] = [];
+                      //widget.db.viewOnlyCalendars["local"] = [];
 
                       for (var cal in selectedImportCalendars) {
-                        //widget.db.syncFromCalendars["local"].add(cal.id);
+                        //widget.db.viewOnlyCalendars["local"].add(cal.id);
                         print("to do calendar ${toDoCalendar.name}");
                         print("${cal.name}");
                         await LocalCalendarService.importCalendarEventsToDB(
@@ -236,12 +236,12 @@ class _LocalCalendarSyncPageState extends State<LocalCalendarSyncPage> {
                       // toDoCalendar = await LocalCalendarService.createNewCalendar(
                       //   widget.calendars,
                       // );
-                      //widget.db.syncFromCalendars["local"] = selectedImportCalendars;
+                      //widget.db.viewOnlyCalendars["local"] = selectedImportCalendars;
                       widget.db.calTasks = [];
 
                       for (var cal in selectedSyncCalendars) {
                         // Mark calendar as synced
-                        widget.db.syncFromCalendars["local"]!.add(cal.id!);
+                        widget.db.viewOnlyCalendars["local"]!.add(cal.id!);
 
                         print("Syncing from calendar: ${cal.name}");
 
@@ -339,7 +339,7 @@ class _LocalCalendarSyncPageState extends State<LocalCalendarSyncPage> {
                     widget.db,
                     toDoCalendar.id.toString(),
                   );
-                  await LocalCalendarService.syncFromCalendar(widget.db);
+                  await LocalCalendarService.syncTasksFromCalendar(widget.db);
                   //print("tasks added");
                 } catch (d, st) {
                   print("failed to sync calendars $d ,$st");

@@ -3,11 +3,22 @@ import "package:to_do_app/data/database.dart";
 import "package:to_do_app/pages/import_ics_page.dart";
 import "package:to_do_app/pages/sign_in_page.dart";
 
-class MyDrawer extends StatelessWidget {
+class MyDrawer extends StatefulWidget {
   final VoidCallback onImported;
   final String? filePath;
-  const MyDrawer({super.key, required this.filePath, required this.onImported});
+  final ToDoDataBase db;
+  MyDrawer({
+    super.key,
+    required this.filePath,
+    required this.onImported,
+    required this.db,
+  });
 
+  @override
+  State<MyDrawer> createState() => _MyDrawerState();
+}
+
+class _MyDrawerState extends State<MyDrawer> {
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -30,27 +41,40 @@ class MyDrawer extends StatelessWidget {
                         MaterialPageRoute(
                           builder:
                               (_) => SignInPage(
-                                db: ToDoDataBase(),
-                                filePath: filePath,
-                                onImported: onImported,
+                                onSignIn: () {
+                                  setState(() {});
+                                },
+                                db: widget.db,
+                                filePath: widget.filePath,
+                                onImported: widget.onImported,
                               ),
                         ),
                       ),
                   child: Center(
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white,
-                      radius: 50,
-                      child: ClipOval(
-                        child: Image.network(
-                          "user.photoUrl" ?? '',
-                          fit: BoxFit.cover,
-                          width: 60,
-                          height: 60,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(Icons.person_rounded, size: 45);
-                          },
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: Colors.white,
+                          radius: 50,
+                          child: ClipOval(
+                            child: Image.network(
+                              widget.db.accountDetails["profilePicture"] ?? '',
+                              fit: BoxFit.cover,
+                              width: 60,
+                              height: 60,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(Icons.person_rounded, size: 45);
+                              },
+                            ),
+                          ),
                         ),
-                      ),
+                        Text(
+                          widget.db.accountDetails["userName"] != "none"
+                              ? widget.db.accountDetails["userName"]
+                              : 'Sign In',
+                          style: TextStyle(color: Colors.white, fontSize: 20),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -99,7 +123,7 @@ class MyDrawer extends StatelessWidget {
                     // Instead, return the result to TaskPage
                     if (imported == true) {
                       // This can be ignored; TaskPage will handle it
-                      onImported();
+                      widget.onImported();
                     }
                   },
                 ),

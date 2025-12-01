@@ -30,7 +30,7 @@ class _CalendarTileState extends State<LocalCalendarTile> {
   Widget build(BuildContext context) {
     isSyncTrue =
         db.syncToCalendars["local"] != "none" ||
-        db.syncFromCalendars["local"]!.isNotEmpty;
+        db.viewOnlyCalendars["local"]!.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         border: Border.all(),
@@ -54,7 +54,7 @@ class _CalendarTileState extends State<LocalCalendarTile> {
                 title: Row(
                   children: [
                     Text(
-                      "Sync with local calendar app",
+                      "Sync with local calendar",
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onPrimary,
                       ),
@@ -213,7 +213,7 @@ class _CalendarTileState extends State<LocalCalendarTile> {
                       );
                     }
                   } else {
-                    widget.db.syncFromCalendars["local"] = {};
+                    widget.db.viewOnlyCalendars["local"] = {};
                     widget.db.syncToCalendars["local"] = "none";
                   }
                 },

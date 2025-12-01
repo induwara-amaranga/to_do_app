@@ -7,6 +7,7 @@ import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/services/google_calendar_service.dart';
 import 'package:to_do_app/services/local_calendar_service.dart';
 import 'package:to_do_app/providers/calendar_sync_provider.dart';
+import 'package:to_do_app/services/outlook_calendar_service.dart';
 import 'package:uuid/uuid.dart';
 
 class GoogleCalendarSyncPage extends StatefulWidget {
@@ -100,6 +101,7 @@ class _LocalCalendarSyncPageState extends State<GoogleCalendarSyncPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Sync google Calendars"), actions: [
+        
           
         ],
       ),
@@ -155,11 +157,11 @@ class _LocalCalendarSyncPageState extends State<GoogleCalendarSyncPage> {
                           await GoogleCalendarService.createOrGetCalendar(
                             calendars,
                           );
-                      //widget.db.syncFromCalendars["google"] = [];
+                      //widget.db.viewOnlyCalendars["google"] = [];
                       if (toDoCalendar == null) return;
 
                       for (var cal in selectedImportCalendars) {
-                        //widget.db.syncFromCalendars["google"].add(cal.id);
+                        //widget.db.viewOnlyCalendars["google"].add(cal.id);
                         print("to do calendar ${toDoCalendar.summary}");
                         print("${cal.summary}");
                         await GoogleCalendarService.importEventsToDB(
@@ -255,12 +257,12 @@ class _LocalCalendarSyncPageState extends State<GoogleCalendarSyncPage> {
                         //       calendars,
                         //     );
                         // if (toDoCalendar == null) return;
-                        //widget.db.syncFromCalendars["google"] = selectedImportCalendars;
+                        //widget.db.viewOnlyCalendars["google"] = selectedImportCalendars;
                         widget.db.calTasks = [];
 
                         for (var cal in selectedSyncCalendars) {
                           // Mark calendar as synced
-                          widget.db.syncFromCalendars["google"]!.add(cal.id!);
+                          widget.db.viewOnlyCalendars["google"]!.add(cal.id!);
 
                           print("Syncing from calendar: ${cal.summary}");
 
@@ -363,7 +365,7 @@ class _LocalCalendarSyncPageState extends State<GoogleCalendarSyncPage> {
                     widget.db,
                     toDoCalendar.id.toString(),
                   );
-                  await GoogleCalendarService.syncFromCalendar(widget.db);
+                  await GoogleCalendarService.syncTasksFromCalendars(widget.db);
                   //print("tasks added");
                 } catch (d) {
                   print("failded to sync calendars");

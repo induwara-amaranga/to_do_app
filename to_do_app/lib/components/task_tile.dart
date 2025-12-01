@@ -20,6 +20,7 @@ class TaskTile extends StatefulWidget {
   final String taskCategory;
   final String taskPriority;
   final String repeatType;
+  final String source;
   final int remainderAmount;
   final String remainderType;
   final List<String> repeatTypes;
@@ -30,6 +31,7 @@ class TaskTile extends StatefulWidget {
 
   const TaskTile({
     super.key,
+    required this.source,
     required this.disableCompleted,
     required this.initialSubtasks,
     required this.index,
@@ -329,6 +331,14 @@ class _TaskTileState extends State<TaskTile> {
                       child: Column(
                         children: [
                           const Divider(),
+                          Text(
+                            "Source : ${widget.source}",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
                           if (widget.taskNote.isNotEmpty)
                             ListTile(
                               leading: const Icon(Icons.note_outlined),

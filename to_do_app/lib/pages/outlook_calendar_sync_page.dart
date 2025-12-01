@@ -97,8 +97,16 @@ class _LocalCalendarSyncPageState extends State<OutlookCalendarSyncPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Sync Outlook Calendars"), actions: [
-          
+      appBar: AppBar(
+        title: const Text("Sync Outlook Calendars"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.more_vert),
+            onPressed: () async {
+              await OutlookCalendarService.signOut();
+              if (mounted) Navigator.pop(context);
+            },
+          ),
         ],
       ),
       body: Column(
@@ -154,11 +162,11 @@ class _LocalCalendarSyncPageState extends State<OutlookCalendarSyncPage> {
                           await OutlookCalendarService.createOrGetCalendar(
                             calendars,
                           );
-                      //widget.db.syncFromCalendars["Outlook"] = [];
+                      //widget.db.viewOnlyCalendars["Outlook"] = [];
                       if (toDoCalendar == null) return;
 
                       for (var cal in selectedImportCalendars) {
-                        //widget.db.syncFromCalendars["Outlook"].add(cal.id);
+                        //widget.db.viewOnlyCalendars["Outlook"].add(cal.id);
                         print("to do calendar ${toDoCalendar["name"]}");
                         print("${cal["name"]}");
                         await OutlookCalendarService.importEventsToDB(
@@ -255,12 +263,12 @@ class _LocalCalendarSyncPageState extends State<OutlookCalendarSyncPage> {
                         //       calendars,
                         //     );
                         // if (toDoCalendar == null) return;
-                        //widget.db.syncFromCalendars["Outlook"] = selectedImportCalendars;
+                        //widget.db.viewOnlyCalendars["Outlook"] = selectedImportCalendars;
                         widget.db.calTasks = [];
 
                         for (var cal in selectedSyncCalendars) {
                           // Mark calendar as synced
-                          widget.db.syncFromCalendars["outlook"]!.add(
+                          widget.db.viewOnlyCalendars["outlook"]!.add(
                             cal["id"]!,
                           );
 
@@ -363,7 +371,7 @@ class _LocalCalendarSyncPageState extends State<OutlookCalendarSyncPage> {
                     widget.db,
                     toDoCalendar["id"],
                   );
-                  await OutlookCalendarService.syncFromCalendar(widget.db);
+                  await OutlookCalendarService.syncTasksFromCalendar(widget.db);
                   //print("tasks added");
                 } catch (d) {
                   print("failded to sync calendars");

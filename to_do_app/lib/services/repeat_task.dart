@@ -82,6 +82,7 @@ class RepeatTask {
       "", //14 cal id
       "", //15 event id
       "", //16 local cal event id
+      "repeat",
     ]);
     // print(
     //   "added ${[
@@ -224,6 +225,7 @@ class RepeatTask {
       "", //14 cal id
       "", //15 event id
       "", //16 local cal event id
+      "repeat",
     ]);
 
     db.updateDataBase();

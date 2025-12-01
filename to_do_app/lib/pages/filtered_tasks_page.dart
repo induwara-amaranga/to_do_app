@@ -88,6 +88,7 @@ class _FilteredtaskspageState extends State<Filteredtaskspage> {
                     ), // unique key for reorder
                     margin: const EdgeInsets.symmetric(vertical: 4),
                     child: TaskTile(
+                      source: task[17],
                       disableCompleted: () {},
                       initialSubtasks:
                           task[13] != null

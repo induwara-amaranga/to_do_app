@@ -119,6 +119,7 @@ class ImportFromIcsService {
         "",
         "",
         "",
+        "ICS",
       ]);
       NotificationService.scheduleInitialRemainderForTask(task['id'], context, {
         'taskName': task['taskName'],

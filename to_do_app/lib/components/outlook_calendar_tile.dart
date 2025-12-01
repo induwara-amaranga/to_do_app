@@ -33,7 +33,7 @@ class _CalendarTileState extends State<OutlookCalendarTile> {
   Widget build(BuildContext context) {
     isSyncTrue =
         db.syncToCalendars["outlook"] != "none" ||
-        db.syncFromCalendars["outlook"]!.isNotEmpty;
+        db.viewOnlyCalendars["outlook"]!.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         border: Border.all(),
@@ -225,7 +225,7 @@ class _CalendarTileState extends State<OutlookCalendarTile> {
                   } else {
                     // Disable sync
                     db.syncToCalendars["outlook"] = "none";
-                    db.syncFromCalendars["outlook"] = {};
+                    db.viewOnlyCalendars["outlook"] = {};
                     db.updateDataBase();
                     setState(() {
                       isSyncTrue = false;

@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:googleapis_auth/googleapis_auth.dart';
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
+//import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:to_do_app/data/database.dart';
 import 'package:uuid/uuid.dart';
 import 'package:to_do_app/utils/date_time_utils.dart';
@@ -15,6 +17,8 @@ class GoogleCalendarService {
   static gcal.CalendarApi? _calendarApi;
   //static AuthClient? _client;
   static Map<String, String>? headers;
+  static GoogleSignInAccount? _account;
+  static final storage = FlutterSecureStorage();
 
   static const webClientId =
       '879200055223-f40a49a8tvse1ca2sngrudqh8r5f3ccg.apps.googleusercontent.com';
@@ -91,34 +95,91 @@ class GoogleCalendarService {
   //   return gcal.CalendarApi(authClient);
   // }
 
+  static Future<bool> restoreLastSession() async {
+    print("🔄 Trying to restore previous Google session...");
+
+    String? auth = await storage.read(key: 'google_cal_headers');
+
+    if (auth == null) {
+      print("❌ No stored token. User must sign in once.");
+      return false;
+    }
+    Map<String, dynamic> header = jsonDecode(auth);
+
+    //final headers = {'Authorization': auth, 'X-Goog-AuthUser': '0'};
+
+    try {
+      _calendarApi = await getCalendarApi(header.cast<String, String>());
+
+      //_driveApi = drive.DriveApi(client);
+
+      // test token
+      //await _driveApi!.files.list(pageSize: 1);
+
+      print("✅ Restored calendar session without sign-in!");
+      return true;
+    } catch (e) {
+      print("❌ Saved token expired: $e");
+      return false;
+    }
+  }
+
   static Future<Map<String, dynamic>?> initializeSignIn() async {
     print("initializing google sign in...");
-    // 1️⃣ Initialize the singleton instance with your OAuth client IDs
+
+    // 1️⃣ Initialize GoogleSignIn
     await GoogleSignIn.instance.initialize(
       clientId: androidClientId,
       serverClientId: webClientId,
     );
 
-    // 2️⃣ Start the authentication flow
-    final GoogleSignInAccount account = await GoogleSignIn.instance
-        .authenticate(scopeHint: ['https://www.googleapis.com/auth/calendar']);
+    GoogleSignInAccount? account;
 
-    // 3️⃣ Get OAuth headers to use with Google APIs
-    final headers = await account.authorizationClient.authorizationHeaders([
-      'https://www.googleapis.com/auth/calendar',
-    ], promptIfNecessary: true);
+    // 2️⃣ Attempt SILENT sign-in first
+    print("Trying silent sign-in...");
+    account = await GoogleSignIn.instance.attemptLightweightAuthentication();
 
-    print('✅ Signed in as: ${account.email}');
-    print('🔑 Access token: ${headers?['Authorization']}');
-
-    if (headers == null) {
-      print('User not signed in');
-      return null;
+    if (account != null) {
+      print("✅ Silent sign-in success: ${account.email}");
+    } else {
+      print("❌ Silent sign-in failed, asking user to sign in...");
+      // 3️⃣ Fallback to UI sign-in
+      account = await GoogleSignIn.instance.authenticate(
+        scopeHint: ['https://www.googleapis.com/auth/calendar'],
+      );
     }
 
+    // 4️⃣ Now request OAuth headers (tokens)
+    print("Requesting OAuth headers...");
+    var headers = await account.authorizationClient.authorizationHeaders(
+      ['https://www.googleapis.com/auth/calendar'],
+      promptIfNecessary: false, // silent permission request
+    );
+
+    // 5️⃣ If tokens are null, ask for permission with popup
+    if (headers == null) {
+      print("Silent header generation failed — requesting user consent...");
+      headers = await account.authorizationClient.authorizationHeaders([
+        'https://www.googleapis.com/auth/calendar',
+      ], promptIfNecessary: true);
+    }
+
+    // 6️⃣ If STILL no headers → fail
+    if (headers == null) {
+      print("❌ Failed to obtain OAuth headers");
+      return null;
+    }
+    await storage.write(key: 'google_cal_headers', value: jsonEncode(headers));
+
+    print('🔑 Access token: ${headers['Authorization']}');
+
+    // 7️⃣ Build Calendar API
     final gcal.CalendarApi calendarApi = await getCalendarApi(headers);
     print('✅ Google Calendar API initialized');
+
     _calendarApi = calendarApi;
+    _account = account;
+
     return {"api": calendarApi, "userName": account.displayName};
   }
 
@@ -314,7 +375,7 @@ class GoogleCalendarService {
         calendarId, //14
         e.id, //15
         e.id, //16
-        //false,
+        _account?.displayName ?? 'google',
       ]);
 
       importedCount++;
@@ -544,7 +605,7 @@ class GoogleCalendarService {
     print("📅 $count tasks added to google calendar");
   }
 
-  static Future<void> syncFromCalendar(ToDoDataBase db) async {
+  static Future<void> syncTasksFromCalendars(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["google"];
     db.calTasks.removeWhere((t) => t[14] == calID);

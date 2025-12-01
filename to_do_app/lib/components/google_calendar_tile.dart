@@ -33,7 +33,7 @@ class _CalendarTileState extends State<GoogleCalendarTile> {
   Widget build(BuildContext context) {
     isSyncTrue =
         db.syncToCalendars["google"] != "none" ||
-        db.syncFromCalendars["google"]!.isNotEmpty;
+        db.viewOnlyCalendars["google"]!.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         border: Border.all(),
@@ -225,7 +225,7 @@ class _CalendarTileState extends State<GoogleCalendarTile> {
                     }
                   } else {
                     db.syncToCalendars["google"] = "none";
-                    db.syncFromCalendars["google"] = {};
+                    db.viewOnlyCalendars["google"] = {};
                     db.updateDataBase();
                     setState(() {
                       isSyncTrue = false;

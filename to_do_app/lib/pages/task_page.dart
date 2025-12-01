@@ -46,6 +46,8 @@ class TaskPage extends StatefulWidget {
 //enum GroupingMode { Default, day, month, year }
 
 class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
+  bool googleRestored = false;
+  bool outlookRestored = false;
   //to do list
   List<List<dynamic>> toDoList = [];
   late List<Widget> categorizedToDOTasks;
@@ -200,7 +202,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
         "", //14 cal id
         "", //15 event id
         "", //16 local cal event id
-        //false, //17 is synced
+        "manual", //17 is synced
       ]);
     });
 
@@ -400,7 +402,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     db = widget.db;
-    WidgetsBinding.instance.addPostFrameCallback((_) => importViewOnly());
+    //WidgetsBinding.instance.addPostFrameCallback((_) => importViewOnly());
 
     _remainderAmountController.text = _selectedRemainderAmount.toString();
     _tabController = TabController(
@@ -419,24 +421,29 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     toDoList = db.toDoList;
     hotTasks = getUpcomingTasksWithinHotPeriod(toDoList);
     //sync calendars
-    //if (db.syncFromCalendars["local"] != [])
-    // LocalCalendarService.syncFromCalendar(db);
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (db.syncToCalendars["local"] != "none") {
-        try {
-          await LocalCalendarService.syncTasksToCalendar(
-            db,
-            db.syncToCalendars["local"],
-          );
-          await LocalCalendarService.syncFromCalendar(db);
 
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("Calendar(s) synced")));
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (db.syncToCalendars["google"] != "none") {
+        try {
+          //if (db.syncToCalendars["google"] != "none") {
+          googleRestored = await GoogleCalendarService.restoreLastSession();
         } catch (d) {
-          print("Failed to sync calendars: $d");
+          print("Failed to sync google calendars: $d");
         }
       }
+      if (db.syncToCalendars["outlook"] != "none") {
+        try {
+          outlookRestored = await OutlookCalendarService.restoreLastSession();
+        } catch (d) {
+          print("Failed to sync outlook calendars: $d");
+        }
+      }
+      if (googleRestored) {
+        print("google calendar session restored.");
+      } else if (outlookRestored) {
+        print("outlook calendar session restored.");
+      }
+      await importViewOnly();
     });
   }
 
@@ -469,6 +476,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
 
     return Scaffold(
       drawer: MyDrawer(
+        db: db,
         filePath: widget.filePath,
         onImported: () {
           db.loadData();
@@ -865,7 +873,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
 
     // // Combine all value lists
     // List<dynamic> combined =
-    //     db.syncFromCalendars.values.expand((v) => v).toList();
+    //     db.viewOnlyCalendars.values.expand((v) => v).toList();
 
     // //check for calendar sync
     // tasksOfThisTab =
@@ -991,6 +999,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                               // }
 
                               return TaskTile(
+                                source: task[17],
                                 disableCompleted: () {
                                   setState(() {
                                     isDuringAnimation = !isDuringAnimation;
@@ -1315,36 +1324,47 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     String localCalendarId = db.syncToCalendars["local"];
     String outlookCalendarId = db.syncToCalendars["outlook"];
     String googleCalendarId = db.syncToCalendars["google"];
-    try {
-      if (localCalendarId == "none" &&
-          outlookCalendarId == "none" &&
-          googleCalendarId == "none")
-        return;
-      syncProvider.startSync();
-      if (localCalendarId != "none") {
-        await LocalCalendarService.syncFromCalendar(db);
-        syncProvider.updateProgress(0.3);
-        await Future.delayed(const Duration(milliseconds: 1000));
-        // await Future.delayed(const Duration(milliseconds: 2000));
-      }
-      if (outlookCalendarId != "none") {
-        await OutlookCalendarService.syncFromCalendar(db);
-        syncProvider.updateProgress(0.5);
-        await Future.delayed(const Duration(milliseconds: 1000));
-      }
-      if (googleCalendarId != "none") {
-        await GoogleCalendarService.syncFromCalendar(db);
-        syncProvider.updateProgress(0.8);
-        await Future.delayed(const Duration(milliseconds: 1000));
-      }
-      syncProvider.finishSync();
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Calendar synced successfully")));
-    } catch (e) {
-      syncProvider.finishSync();
-      print("Error during calendar sync: $e");
+    if (localCalendarId == "none" &&
+        outlookCalendarId == "none" &&
+        googleCalendarId == "none")
+      return;
+    syncProvider.startSync();
+    if (localCalendarId != "none") {
+      try {
+        print("Syncing local calendars...");
+        await LocalCalendarService.syncTasksFromCalendar(db);
+        syncProvider.updateProgress(0.3);
+      } catch (e) {
+        print("Failed to sync local calendars: $e");
+      }
+      await Future.delayed(const Duration(milliseconds: 1000));
+      // await Future.delayed(const Duration(milliseconds: 2000));
     }
+    if (outlookCalendarId != "none") {
+      try {
+        print("Syncing outlook calendars...");
+        await OutlookCalendarService.syncTasksFromCalendar(db);
+        syncProvider.updateProgress(0.5);
+      } catch (e) {
+        print("Failed to sync outlook calendars: $e");
+      }
+      await Future.delayed(const Duration(milliseconds: 1000));
+    }
+    if (googleCalendarId != "none") {
+      try {
+        print("Syncing google calendars...");
+        await GoogleCalendarService.syncTasksFromCalendars(db);
+        syncProvider.updateProgress(0.8);
+      } catch (e) {
+        print("Failed to sync google calendars: $e");
+      }
+      await Future.delayed(const Duration(milliseconds: 1000));
+    }
+    syncProvider.finishSync();
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Calendar synced successfully")));
   }
 }

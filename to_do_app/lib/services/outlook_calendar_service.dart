@@ -1,4 +1,5 @@
 //import 'package:msal_flutter/msal_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:msal_auth/msal_auth.dart';
 import 'package:to_do_app/data/database.dart';
@@ -18,7 +19,77 @@ class OutlookCalendarService {
   //static late PublicClientApplication _pca;
   static String? _accessToken;
 
+  static final storage = FlutterSecureStorage();
+
   static late SingleAccountPca _pca;
+
+  static Future<bool> restoreLastSession() async {
+    print("🔄 Attempting to restore last Outlook session...");
+
+    try {
+      // 1️⃣ Read saved access token
+      final savedToken = await storage.read(key: 'outlook_cal_accessToken');
+
+      if (savedToken == null) {
+        print("⚠️ No saved Outlook session found.");
+        return false;
+      }
+
+      print("🔐 Found saved token, verifying silently...");
+
+      _accessToken = savedToken;
+
+      // 2️⃣ Try silent token acquisition (refresh internal state)
+      final silentToken = await acquireTokenSilently();
+
+      if (silentToken != null) {
+        print("✅ Outlook session restored silently!");
+        _accessToken = silentToken;
+
+        // Update storage with refreshed token
+        await storage.write(
+          key: 'outlook_cal_accessToken',
+          value: _accessToken,
+        );
+
+        return true;
+      }
+
+      // 3️⃣ Silent failed → Token expired
+      print("⚠️ Saved token invalid/expired. Need full login.");
+      return false;
+    } catch (e) {
+      print("❌ Error restoring Outlook session: $e");
+      return false;
+    }
+  }
+
+  static Future<void> signOut() async {
+    try {
+      await _pca.signOut();
+      print("✅ Signed out successfully");
+      _accessToken = null;
+    } catch (e) {
+      print("❌ Sign-out failed: $e");
+    }
+  }
+
+  static Future<String?> acquireTokenSilently() async {
+    try {
+      final result = await _pca.acquireTokenSilent(
+        scopes: [
+          'https://graph.microsoft.com/User.Read',
+          'https://graph.microsoft.com/Calendars.ReadWrite',
+        ],
+      );
+
+      print("🔑 Silent token acquired: ${result.accessToken}");
+      return result.accessToken;
+    } catch (e) {
+      print("⚠️ Silent token failed: $e");
+      return null; // will trigger interactive login
+    }
+  }
 
   static Future<void> init() async {
     try {
@@ -49,44 +120,81 @@ class OutlookCalendarService {
       return result.accessToken;
     } catch (e) {
       print("❌sign in error $e");
+      return null;
     }
   }
 
   static Future<bool> initialize() async {
-    // _pca = await PublicClientApplication.createPublicClientApplication(
-    //   _clientId,
-    //   authority:
-    //       "https://login.microsoftonline.com/common", // use your tenant if needed
-    // );
-    // print("getting token....");
     try {
-      //   final result = await _pca.acquireToken(_scopes);
-      //   _accessToken = result;
+      await init(); // initialize PCA instance
 
-      // final msalAuth = await SingleAccountPca.create(
-      //   clientId: _clientId,
-      //   androidConfig: AndroidConfig(
-      //     configFilePath: 'assets/msal_config.json',
-      //     redirectUri: _redirectUri,
-      //   ),
-      //   appleConfig: AppleConfig(
-      //     authority: '<Optional, but must be provided for b2c>',
-      //     // Change authority type to 'b2c' for business to customer flow.
-      //     authorityType: AuthorityType.aad,
-      //     // Change broker if you need. Applicable only for iOS platform.
-      //     broker: Broker.msAuthenticator,
-      //   ),
-      // );
-      await init();
+      print("🔍 Trying silent sign-in...");
+      final silentToken = await acquireTokenSilently();
+
+      if (silentToken != null) {
+        await storage.write(
+          key: 'outlook_cal_accessToken',
+          value: _accessToken,
+        );
+        print("✅ Silent sign-in success");
+        _accessToken = silentToken;
+        return true;
+      }
+
+      print("⚠️ Silent failed → doing interactive sign-in...");
       _accessToken = await signIn();
-      print("✅ Access Token: $_accessToken");
-      return true;
+
+      if (_accessToken != null) {
+        print("✅ Interactive sign-in success");
+        await storage.write(
+          key: 'outlook_cal_accessToken',
+          value: _accessToken,
+        );
+        return true;
+      } else {
+        return false;
+      }
     } catch (e) {
-      print("❌ Sign-in failed: $e");
+      print("❌ initialize error: $e");
       return false;
     }
-    //return true;
   }
+
+  // static Future<bool> initialize() async {
+  //   // _pca = await PublicClientApplication.createPublicClientApplication(
+  //   //   _clientId,
+  //   //   authority:
+  //   //       "https://login.microsoftonline.com/common", // use your tenant if needed
+  //   // );
+  //   // print("getting token....");
+  //   try {
+  //     //   final result = await _pca.acquireToken(_scopes);
+  //     //   _accessToken = result;
+
+  //     // final msalAuth = await SingleAccountPca.create(
+  //     //   clientId: _clientId,
+  //     //   androidConfig: AndroidConfig(
+  //     //     configFilePath: 'assets/msal_config.json',
+  //     //     redirectUri: _redirectUri,
+  //     //   ),
+  //     //   appleConfig: AppleConfig(
+  //     //     authority: '<Optional, but must be provided for b2c>',
+  //     //     // Change authority type to 'b2c' for business to customer flow.
+  //     //     authorityType: AuthorityType.aad,
+  //     //     // Change broker if you need. Applicable only for iOS platform.
+  //     //     broker: Broker.msAuthenticator,
+  //     //   ),
+  //     // );
+  //     await init();
+  //     _accessToken = await signIn();
+  //     print("✅ Access Token: $_accessToken");
+  //     return true;
+  //   } catch (e) {
+  //     print("❌ Sign-in failed: $e");
+  //     return false;
+  //   }
+  //   //return true;
+  // }
 
   /// 🔹 Create or get a calendar named "ToDoList"
   static Future<Map<String, dynamic>?> createOrGetCalendar(
@@ -403,7 +511,7 @@ class OutlookCalendarService {
         calendarId, // 14
         eventId, // 15
         eventId, // 16 duplicate id for consistency
-        //false, // 17 placeholder
+        "outlook", // 17 placeholder
       ]);
       importedCount++;
     }
@@ -548,7 +656,7 @@ class OutlookCalendarService {
     print("📅 $count tasks added to outlook calendar");
   }
 
-  static Future<void> syncFromCalendar(ToDoDataBase db) async {
+  static Future<void> syncTasksFromCalendar(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["outlook"];
     db.calTasks.removeWhere((t) => t[14] == calID);

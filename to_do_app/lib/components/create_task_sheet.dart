@@ -79,6 +79,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   @override
   void initState() {
     super.initState();
+    print(("====${widget.initialDueDate},${widget.initialDueTime}"));
     _selectedDueDate = widget.initialDueDate;
     _selectedDueTime = widget.initialDueTime;
     _selectedCategory = widget.initialCategory;
@@ -482,6 +483,9 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                                           minute: _selectedDueTime!.minute,
                                         )
                                         : TimeOfDay.now();
+                                print(
+                                  "----------initialTime ${_selectedDueTime!.hour},${_selectedDueTime!.minute}",
+                                );
                                 final picked = await showTimePicker(
                                   context: context,
                                   initialTime: initialTime,

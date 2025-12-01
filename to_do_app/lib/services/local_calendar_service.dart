@@ -321,7 +321,7 @@ class LocalCalendarService {
         taskDetails['calendarId'], // store calendar ID
         taskDetails['eventId'],
         taskDetails['eventId'],
-        false,
+        "local calendar",
       ]);
 
       importedCount++;
@@ -498,7 +498,7 @@ class LocalCalendarService {
     print("📅 $count tasks added to local calendar");
   }
 
-  static Future<void> syncFromCalendar(ToDoDataBase db) async {
+  static Future<void> syncTasksFromCalendar(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["local"];
     db.calTasks.removeWhere((t) => t[14] == calID);
