@@ -2,6 +2,8 @@
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
 
+//print("DateTimeUtilsHelper loaded ${tz.local.name}");
+
 class DateTimeUtilsHelper {
   // Parse String → DateTime
   static DateTime? parseDate(String? dateStr, {String format = "yyyy-MM-dd"}) {
@@ -86,6 +88,7 @@ class DateTimeUtilsHelper {
 
   /// Converts a UTC DateTime (or any DateTime) to tz.local time
   static DateTime toLocalUsingTz(DateTime dateTime) {
+    print("local zone ${tz.local.name}");
     final utcTime = DateTime.utc(
       dateTime.year,
       dateTime.month,
@@ -94,11 +97,14 @@ class DateTimeUtilsHelper {
       dateTime.minute,
       dateTime.second,
     );
+    print("utc time $utcTime");
 
     // Wrap the DateTime in tz.TZDateTime using tz.local
     final localTzDateTime = tz.TZDateTime.from(utcTime, tz.local);
+    print("localTzDateTime $localTzDateTime");
 
     // Return a normal Dart DateTime in local tz
+    //print("local zone 2 ${tz.local.name}");
     return localTzDateTime;
   }
 }

@@ -5,7 +5,9 @@ import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/utils/date_time_utils.dart';
 import 'package:uuid/uuid.dart';
 
-final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin();
+final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin(
+  shouldInitTimezone: false,
+);
 var uuid = Uuid();
 
 class LocalCalendarService {

@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:lottie/lottie.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'package:to_do_app/components/create_task_sheet.dart';
 import 'package:to_do_app/utils/date_time_utils.dart';
 
@@ -83,10 +84,12 @@ class _TaskTileState extends State<TaskTile> {
   void initState() {
     super.initState();
     _completed = widget.taskCompleted;
+    print("task tile zone : ${tz.local.name}");
   }
 
   @override
   Widget build(BuildContext context) {
+    print("task tile build zone: ${tz.local.name}");
     // DateTime dueDate=DateTimeUtilsHelper.parseDate(widget.dueDate);
 
     final combinedTime = DateTimeUtilsHelper.combineDateAndTime(
@@ -94,7 +97,7 @@ class _TaskTileState extends State<TaskTile> {
       widget.dueTime,
     );
     final localTime = DateTimeUtilsHelper.toLocalUsingTz(combinedTime);
-    print("local $localTime");
+    print("$combinedTime local zone $localTime");
     return Center(
       child: AnimatedSize(
         //alignment: Alignment.topCenter,

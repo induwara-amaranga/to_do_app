@@ -16,11 +16,11 @@ class NotificationService {
 
   static Future<void> init() async {
     //init timezone handling
-    tz.initializeTimeZones();
-    var currentTimeZone = await FlutterTimezone.getLocalTimezone();
-    String zoneString = currentTimeZone.identifier;
+    //tz.initializeTimeZones();
+    //var currentTimeZone = await FlutterTimezone.getLocalTimezone();
+    //String zoneString = currentTimeZone.identifier;
     //print("detected zone is=====================>$zoneString");
-    tz.setLocalLocation(tz.getLocation(zoneString));
+    //tz.setLocalLocation(tz.getLocation(zoneString));
     //android intialization settings
     const AndroidInitializationSettings androidInit =
         AndroidInitializationSettings('@mipmap/ic_launcher');

@@ -64,6 +64,18 @@ class RepeatTask {
     }
     String id = uuid.v4();
 
+    final indexWhere = db.toDoList.indexWhere((t) {
+      DateTime dueDate = DateTimeUtilsHelper.parseDate(t[3])!;
+
+      return t.length > 15 &&
+          dueDate.year == nextDate.year &&
+          dueDate.month == nextDate.month &&
+          dueDate.day == nextDate.day &&
+          t[0] == task[0];
+    });
+    print("index  $indexWhere");
+    if (indexWhere != -1) return nextDate;
+
     db.toDoList.add([
       task[0], // name
       false, // incomplete

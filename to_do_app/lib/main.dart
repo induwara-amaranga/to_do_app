@@ -32,16 +32,18 @@ tz.Location? findLocalLocation() {
   for (final name in tz.timeZoneDatabase.locations.keys) {
     final location = tz.getLocation(name);
     final locNow = tz.TZDateTime.now(location);
+
     if (locNow.timeZoneOffset == offset) {
       return location;
     }
   }
+  print("Could not find local timezone location");
   return tz.getLocation('UTC'); // fallback
 }
 
 Future<void> initLocalTimeZone() async {
   // 1. Initialize the timezone database
-  tz.initializeTimeZones();
+  //tz.initializeTimeZones();
 
   if (db.settings["timeZone"] == "") {
     //final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
@@ -53,20 +55,21 @@ Future<void> initLocalTimeZone() async {
     //print("Local timezone set: ${tz.local.name}");
     print("Local timezone set in tz package: ${tz.local.name}");
   } else {
-    final String timeZoneName = db.settings["timeZone"];
-    // 2. Get device timezone (e.g., "Asia/Colombo")
-    print("Device timezone: $timeZoneName");
-    // 3. Get tz Location
-    final tz.Location location = tz.getLocation(timeZoneName);
+    // final String timeZoneName = db.settings["timeZone"];
+    // // 2. Get device timezone (e.g., "Asia/Colombo")
+    // print("Device timezone: $timeZoneName");
+    // // 3. Get tz Location
+    // final tz.Location location = tz.getLocation(timeZoneName);
 
-    // 4. Set as local
-    tz.setLocalLocation(location);
-    print("Local timezone set in tz package (from db): ${tz.local.name}");
+    // // 4. Set as local
+    // tz.setLocalLocation(location);
+    // print("Local timezone set in tz package (from db): ${tz.local.name}");
   }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  tz.initializeTimeZones();
   await Supabase.initialize(
     url: "https://vzltupelovhgagglqpjf.supabase.co",
     anonKey:
@@ -83,13 +86,6 @@ void main() async {
     db.loadData();
   }
   // WidgetsFlutterBinding.ensureInitialized();
-  await initLocalTimeZone();
-
-  try {
-    await NotificationService.init();
-  } catch (e) {
-    print("failed to detect time zome $e");
-  }
 
   // TEST NOTIFICATION
   try {
@@ -112,6 +108,12 @@ void main() async {
       child: const MyApp(),
     ),
   );
+  await initLocalTimeZone();
+  try {
+    // await NotificationService.init();
+  } catch (e) {
+    print("failed to detect time zome $e");
+  }
 }
 
 class MyApp extends StatelessWidget {

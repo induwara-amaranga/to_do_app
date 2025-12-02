@@ -1,7 +1,7 @@
+import 'package:timezone/timezone.dart' as tz;
 import 'package:to_do_app/components/sync_tile.dart';
 import 'package:to_do_app/providers/calendar_sync_provider.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:to_do_app/components/create_task_sheet.dart';
 import 'package:to_do_app/components/drawer.dart';
 import 'package:to_do_app/components/task_page_appbar.dart';
@@ -401,6 +401,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    print("task page zone: ${tz.local.name}");
     db = widget.db;
     //WidgetsBinding.instance.addPostFrameCallback((_) => importViewOnly());
 
