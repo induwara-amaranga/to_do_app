@@ -79,6 +79,7 @@ class ToDoDataBase {
     print("🗄️ Loading database...");
     // Load to-do list
     final storedToDo = _mybox.get("TODOLIST");
+
     if (storedToDo is List) {
       toDoList = storedToDo.map((item) => item as List<dynamic>).toList();
     }
@@ -92,7 +93,7 @@ class ToDoDataBase {
     }
 
     // Load viewOnlyCalendars (convert back to Sets)
-    final storedFromCalendars = _mybox.get("SYNC_FROM_CALENDARS");
+    final storedFromCalendars = _mybox.get("VIEW_ONLY_CALENDARS");
     if (storedFromCalendars is Map) {
       viewOnlyCalendars = {
         "local": (storedFromCalendars["local"] ?? []).cast<String>().toSet(),
@@ -142,7 +143,7 @@ class ToDoDataBase {
 
     _mybox.put("TODOLIST", toDoList);
     _mybox.put("CATEGORIES", categories);
-    _mybox.put("SYNC_FROM_CALENDARS", hiveviewOnlyCalendars);
+    _mybox.put("VIEW_ONLY_CALENDARS", hiveviewOnlyCalendars);
     _mybox.put("SYNC_TO_CALENDARS", syncToCalendars);
     _mybox.put("CAL_TASKS", calTasks);
     _mybox.put("SETTINGS", settings);

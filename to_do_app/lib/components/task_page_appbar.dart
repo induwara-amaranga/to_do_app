@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:to_do_app/components/edit_categories_dialog.dart';
 import 'package:to_do_app/components/my_tab_bar.dart';
+import 'package:to_do_app/components/search_bar.dart' as sb;
 import 'package:to_do_app/components/task_filter.dart';
 import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/pages/filtered_tasks_page.dart';
@@ -304,7 +305,6 @@ class _TaskPageAppBarState extends State<TaskPageAppBar>
                                   ),
                                 ),
                                 PopupMenuItem<String>(
-                                  //value: 'group_by',
                                   child: PopupMenuButton<String>(
                                     padding: EdgeInsets.zero,
                                     child: Row(
@@ -402,26 +402,8 @@ class _TaskPageAppBarState extends State<TaskPageAppBar>
                     ),
                     SizedBox(height: 15),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: TextField(
-                          decoration: InputDecoration(
-                            hintText: "Search...",
-                            prefixIcon: Icon(Icons.search),
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(vertical: 10),
-                          ),
-                          onChanged: (value) {
-                            // Get the provider and update the query
-                            context.read<SearchingProvider>().setQuery(value);
-                          },
-                        ),
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: sb.SearchBar(searchType: "task"),
                     ),
                   ],
                 ),

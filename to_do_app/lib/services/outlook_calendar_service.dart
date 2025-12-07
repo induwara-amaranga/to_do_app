@@ -76,6 +76,7 @@ class OutlookCalendarService {
 
   static Future<String?> acquireTokenSilently() async {
     try {
+      await init();
       final result = await _pca.acquireTokenSilent(
         scopes: [
           'https://graph.microsoft.com/User.Read',

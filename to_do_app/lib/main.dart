@@ -14,6 +14,9 @@ import 'package:to_do_app/pages/manage_categories_page.dart';
 import 'package:to_do_app/pages/saved_timetables_page.dart';
 import 'package:to_do_app/pages/task_page.dart';
 import 'package:to_do_app/providers/calendar_sync_provider.dart';
+import 'package:to_do_app/providers/file_search_provider.dart';
+import 'package:to_do_app/providers/file_sort_provider.dart';
+import 'package:to_do_app/providers/view_provider.dart';
 import 'package:to_do_app/themes/theme_provider.dart';
 import 'package:to_do_app/providers/grouping_provider.dart';
 import 'package:to_do_app/providers/sorting_provider.dart';
@@ -77,6 +80,7 @@ void main() async {
   );
   await Hive.initFlutter();
   var box = await Hive.openBox("mybox");
+  Box fileMetaBox = await Hive.openBox("fileMetaBox");
   path = box.path!;
   //await box.clear();
   final _myBox = Hive.box("mybox");
@@ -104,6 +108,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => SortingProvider()),
         ChangeNotifierProvider(create: (_) => SearchingProvider()),
         ChangeNotifierProvider(create: (_) => CalendarSyncProvider()),
+        ChangeNotifierProvider(create: (_) => FileSearchProvider()),
+        ChangeNotifierProvider(create: (_) => FileSortProvider()),
+        ChangeNotifierProvider(create: (_) => ViewProvider()),
       ],
       child: const MyApp(),
     ),
