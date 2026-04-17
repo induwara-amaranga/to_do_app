@@ -1,0 +1,415 @@
+;!function(){try { var e="undefined"!=typeof globalThis?globalThis:"undefined"!=typeof global?global:"undefined"!=typeof window?window:"undefined"!=typeof self?self:{},n=(new e.Error).stack;n&&((e._debugIds|| (e._debugIds={}))[n]="5d438a95-daae-5836-fb03-ebe54db0150c")}catch(e){}}();
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,919319,e=>{"use strict";var s=e.i(478902);e.i(128328);var a=e.i(158639),t=e.i(389959),n=e.i(367367),r=e.i(108892),i=e.i(377451),o=e.i(498817),l=e.i(162082),c=e.i(265735),d=e.i(200243);let u=({selectedLang:e,snippet:t})=>{let{ref:n}=(0,a.useParams)(),{data:r}=(0,c.useSelectedOrganizationQuery)(),{mutate:i}=(0,l.useSendEventMutation)();return t[e]?(0,s.jsxs)("div",{className:"codeblock-container",children:[(0,s.jsx)("h4",{children:t.title}),(0,s.jsx)(d.SimpleCodeBlock,{className:t[e]?.language,onCopy:()=>{i({action:"api_docs_code_copy_button_clicked",properties:{title:t.title,selectedLanguage:e},groups:{project:n??"Unknown",organization:r?.slug??"Unknown"}})},children:t[e]?.code})]}):null},h=(e,s,a)=>({title:`${e}`,bash:{language:"bash",code:`${a}`},js:{language:"js",code:`const ${s} = '${a}'`}}),p=(e,s,{keyName:a,showBearer:t=!0})=>({title:"Example usage",bash:{language:"bash",code:`
+curl '${s}/rest/v1/' \\
+-H "apikey: ${e}" ${t?`\\
+-H "Authorization: Bearer ${e}"`:""}
+`},js:{language:"js",code:`
+const SUPABASE_URL = "${s}"
+const supabase = createClient(SUPABASE_URL, process.env.${a||"SUPABASE_KEY"});
+`}}),m=({title:e="Read specific columns",resourceId:s,endpoint:a,apiKey:t,columnName:n="some_column,other_column"})=>({title:e,bash:{language:"bash",code:`
+curl '${a}/rest/v1/${s}?select=${n}' \\
+-H "apikey: ${t}" \\
+-H "Authorization: Bearer ${t}"
+`},js:{language:"js",code:`
+let { data: ${s}, error } = await supabase
+  .from('${s}')
+  .select('${n}')
+`}}),g=({selectedLang:e,showApiKey:t})=>{let{ref:l}=(0,a.useParams)(),{canReadAPIKeys:c}=(0,o.useApiKeysVisibility)(),{data:d}=(0,r.useAPIKeysQuery)({projectRef:l},{enabled:c}),{data:m}=(0,i.useProjectSettingsV2Query)({projectRef:l}),{anonKey:g,serviceKey:x}=(0,r.getKeys)(d),j=m?.app_config?.protocol??"https",b=m?.app_config?.endpoint,y=`${j}://${b??""}`,f="SUPABASE_KEY"!==t?g?.api_key??"SUPABASE_CLIENT_API_KEY":"SUPABASE_CLIENT_API_KEY",v="SUPABASE_KEY"!==t?x?.api_key??"SUPABASE_SERVICE_KEY":"SUPABASE_SERVICE_KEY";return(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h2",{className:"doc-heading",children:"Authentication"}),(0,s.jsx)("div",{className:"doc-section",children:(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Supabase works through a mixture of JWT and Key auth."}),(0,s.jsxs)("p",{children:["If no ",(0,s.jsx)("code",{children:"Authorization"})," header is included, the API will assume that you are making a request with an anonymous user."]}),(0,s.jsxs)("p",{children:["If an ",(0,s.jsx)("code",{children:"Authorization"}),' header is included, the API will "switch" to the role of the user making the request. See the User Management section for more details.']}),(0,s.jsx)("p",{children:"We recommend setting your keys as Environment Variables."})]})}),(0,s.jsx)("h2",{className:"doc-heading",children:"Client API Keys"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:'Client keys allow "anonymous access" to your database, until the user has logged in. After logging in the keys will switch to the user\'s own login token.'}),(0,s.jsxs)("p",{children:["In this documentation, we will refer to the key using the name ",(0,s.jsx)("code",{children:"SUPABASE_KEY"}),"."]}),(0,s.jsxs)("p",{children:["We have provided you a Client Key to get started. You will soon be able to add as many keys as you like. You can find the ",(0,s.jsx)("code",{children:"anon"})," key in the"," ",(0,s.jsx)(n.default,{href:`/project/${l}/settings/api`,children:"API Settings"})," page."]})]}),(0,s.jsxs)("article",{className:"code",children:[(0,s.jsx)(u,{selectedLang:e,snippet:h("CLIENT API KEY","SUPABASE_KEY",f)}),(0,s.jsx)(u,{selectedLang:e,snippet:p(f,y,{showBearer:!1})})]})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Service Keys"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Service keys have FULL access to your data, bypassing any security policies. Be VERY careful where you expose these keys. They should only be used on a server and never on a client or browser."}),(0,s.jsxs)("p",{children:["In this documentation, we will refer to the key using the name ",(0,s.jsx)("code",{children:"SERVICE_KEY"}),"."]}),(0,s.jsxs)("p",{children:["We have provided you with a Service Key to get started. Soon you will be able to add as many keys as you like. You can find the ",(0,s.jsx)("code",{children:"service_role"})," in the"," ",(0,s.jsx)(n.default,{href:`/project/${l}/settings/api`,children:"API Settings"})," page."]})]}),(0,s.jsxs)("article",{className:"code",children:[(0,s.jsx)(u,{selectedLang:e,snippet:h("SERVICE KEY","SERVICE_KEY",v)}),(0,s.jsx)(u,{selectedLang:e,snippet:p(v,y,{keyName:"SERVICE_KEY"})})]})]})]})};var x=e.i(462142),j=e.i(937942),b=e.i(837710),y=e.i(710483);let f=()=>{let{ref:e}=(0,a.useParams)();return(0,s.jsxs)(y.Admonition,{type:"default",children:[(0,s.jsx)("p",{className:"!mt-0 !mb-1.5",children:"The public schema for this project is not exposed"}),(0,s.jsx)("p",{className:"!mt-0 !mb-1.5 text-foreground-light",children:"You will not be able to query tables and views in the public schema via supabase-js or HTTP clients. Configure this behavior in your project's Data API settings."}),(0,s.jsx)(b.Button,{asChild:!0,type:"default",className:"mt-1",children:(0,s.jsx)(n.default,{href:`/project/${e}/settings/api#postgrest-config`,className:"!no-underline",children:"View API settings"})})]})};function v({selectedLang:e}){let t,{ref:n}=(0,a.useParams)(),{data:r}=(0,i.useProjectSettingsV2Query)({projectRef:n}),{data:o,isSuccess:l}=(0,x.useProjectPostgrestConfigQuery)({projectRef:n}),c=r?.app_config?.protocol??"https",d=r?.app_config?.endpoint,h=`${c}://${d??""}`,p=o?.db_schema.split(",").map(e=>e.trim()).includes("public");return(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h2",{className:"doc-heading",children:"Connect to your project"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsxs)("p",{children:["All projects have a RESTful endpoint that you can use with your project's API key to query and manage your database. These can be obtained from the"," ",(0,s.jsx)(j.InlineLink,{href:`/project/${n}/settings/api`,children:"API settings"}),"."]}),(0,s.jsxs)("p",{children:["You can initialize a new Supabase client using the ",(0,s.jsx)("code",{children:"createClient()"})," method. The Supabase client is your entrypoint to the rest of the Supabase functionality and is the easiest way to interact with everything we offer within the Supabase ecosystem."]})]}),(0,s.jsxs)("article",{className:"code flex flex-col gap-y-2",children:[(0,s.jsx)(u,{selectedLang:e,snippet:(t=h,{title:"Initializing",bash:{language:"bash",code:"# No client library required for Bash."},js:{language:"js",code:`
+import { createClient } from '@supabase/supabase-js'
+const supabaseUrl = '${t}'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)`},python:{language:"python",code:`
+import os
+from supabase import create_client, Client
+url: str = '${t}'
+key: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
+`},dart:{language:"dart",code:`
+const supabaseUrl = '${t}';
+const supabaseKey = String.fromEnvironment('SUPABASE_KEY');
+Future<void> main() async {
+  await Supabase.initialize(url: supabaseUrl, anonKey: supabaseKey);
+  runApp(MyApp());
+}`}})}),l&&!p&&(0,s.jsx)(f,{})]})]})]})}let w=()=>(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h2",{className:"doc-heading",children:"Introduction"}),(0,s.jsx)("div",{className:"doc-section",children:(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"All of your database stored procedures are available on your API. This means you can build your logic directly into the database (if you're brave enough)!"}),(0,s.jsx)("p",{children:"The API endpoint supports POST (and in some cases GET) to execute the function."})]})})]});var N=e.i(786741),S=e.i(355901),$=e.i(513826),k=e.i(74227),A=e.i(10429);function _({selectedLang:e}){let{ref:r}=(0,a.useParams)(),[i,o]=(0,t.useState)(!1),{data:l}=(0,x.useProjectPostgrestConfigQuery)({projectRef:r}),c=async()=>{try{o(!0);let e=await (0,k.generateTypes)({ref:r,included_schemas:l?.db_schema}),s=document.createElement("a");s.setAttribute("href","data:text/plain;charset=utf-8,"+encodeURIComponent(e.types)),s.setAttribute("download","supabase.ts"),s.style.display="none",document.body.appendChild(s),s.click(),document.body.removeChild(s),S.toast.success("Successfully generated types! File is being downloaded")}catch(e){S.toast.error(`Failed to generate types: ${e.message}`)}finally{o(!1)}};return(0,s.jsxs)(s.Fragment,{children:[(0,s.jsxs)("h2",{className:"doc-heading flex items-center justify-between",children:[(0,s.jsx)("span",{children:"Generating types"}),(0,s.jsx)($.DocsButton,{href:`${A.DOCS_URL}/guides/database/api/generating-types`})]}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Supabase APIs are generated from your database, which means that we can use database introspection to generate type-safe API definitions."}),(0,s.jsxs)("p",{children:["You can generate types from your database either through the"," ",(0,s.jsx)(n.default,{href:`${A.DOCS_URL}/guides/database/api/generating-types`,children:"Supabase CLI"}),", or by downloading the types file via the button on the right and importing it in your application within ",(0,s.jsx)("code",{children:"src/index.ts"}),"."]})]}),(0,s.jsxs)("article",{className:`code ${"js"===e?"flex items-center justify-center":""}`,children:[(0,s.jsxs)("div",{className:"grid gap-2",children:[(0,s.jsx)("p",{className:"text-center",children:"js"===e&&(0,s.jsx)(b.Button,{type:"default",disabled:i,loading:i,icon:(0,s.jsx)(N.Download,{strokeWidth:1.5}),onClick:c,children:"Generate and download types"})}),(0,s.jsx)("p",{className:"text-xs text-center text-foreground-light bg-studio p-4",children:"Remember to re-generate and download this file as you make changes to your tables."})]}),(0,s.jsx)(u,{selectedLang:e,snippet:P.cliLogin()}),(0,s.jsx)(u,{selectedLang:e,snippet:P.generateTypes(r??"")})]})]})]})}let P={cliLogin:()=>({title:"Login via the CLI with your Personal Access Token",bash:{code:`
+npx supabase login
+`}}),generateTypes:e=>({title:"Generate types",bash:{code:`
+npx supabase gen types typescript --project-id "${e}" --schema public > types/supabase.ts
+`}})},E=()=>({title:"With Apollo GraphQL",bash:{language:"js",code:`
+const { loading, error, data } = useQuery(gql\`
+  query GetDogs {
+    dogs {
+      id
+      breed
+      owner {
+        id
+        name
+      }
+    }
+  }
+\`)`},js:{language:"js",code:`
+const { loading, error, data } = useQuery(gql\`
+  query GetDogs {
+    dogs {
+      id
+      breed
+      owner {
+        id
+        name
+      }
+    }
+  }
+\`)`}}),L=()=>({title:"With Supabase",bash:{language:"js",code:`
+const { data, error } = await supabase
+  .from('dogs')
+  .select(\`
+      id, breed,
+      owner (id, name)
+  \`)
+`},js:{language:"js",code:`
+const { data, error } = await supabase
+  .from('dogs')
+  .select(\`
+      id, breed,
+      owner (id, name)
+  \`)
+`}}),C=({selectedLang:e})=>{let{ref:t}=(0,a.useParams)(),{data:r,isSuccess:i}=(0,x.useProjectPostgrestConfigQuery)({projectRef:t}),o=r?.db_schema.split(",").map(e=>e.trim()).includes("public");return(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h2",{className:"doc-heading",children:"Introduction"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsx)("article",{className:"code-column text-foreground flex flex-col gap-y-2",children:(0,s.jsxs)("p",{children:["All views and tables in the ",(0,s.jsx)("code",{children:"public"})," schema and accessible by the active database role for a request are available for querying."]})}),(0,s.jsx)("article",{className:"code",children:i&&!o&&(0,s.jsx)(f,{})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Non-exposed tables"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsx)("article",{className:"code-column text-foreground",children:(0,s.jsxs)("p",{children:["If you don't want to expose tables in your API, simply add them to a different schema (not the ",(0,s.jsx)("code",{children:"public"})," schema)."]})}),(0,s.jsx)("article",{className:"code"})]}),(0,s.jsx)(_,{selectedLang:e}),(0,s.jsxs)("h2",{className:"doc-heading",children:["GraphQL ",(0,s.jsx)("span",{className:"lowercase",children:"vs"})," Supabase"]}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"If you have a GraphQL background, you might be wondering if you can fetch your data in a single round-trip. The answer is yes!"}),(0,s.jsxs)("p",{children:["The syntax is very similar. This example shows how you might achieve the same thing with Apollo GraphQL and Supabase.",(0,s.jsx)("br",{}),(0,s.jsx)("br",{})]}),(0,s.jsx)("h4",{children:"Still want GraphQL?"}),(0,s.jsxs)("p",{children:["If you still want to use GraphQL, you can. Supabase provides you with a full Postgres database, so as long as your middleware can connect to the database then you can still use the tools you love. You can find the database connection details"," ",(0,s.jsx)(n.default,{href:`/project/${t}/database/settings`,children:"in the settings."})]})]}),(0,s.jsxs)("article",{className:"code",children:[(0,s.jsx)(u,{selectedLang:e,snippet:E()}),(0,s.jsx)(u,{selectedLang:e,snippet:L()})]})]})]})};var T=e.i(784744),I=e.i(912793),U=e.i(48189);let H=(0,U.makeRandomString)(20),R=({selectedLang:e,showApiKey:t})=>{let r,o,l,c,d,h,p,m,g,x,j,b,y,f,v,w,N,S,$,k,_,P,E,L,C,U,R=(0,T.useRouter)(),{ref:O}=(0,a.useParams)(),D=t||"SUPABASE_KEY",{authenticationSignInProviders:B}=(0,I.useIsFeatureEnabled)(["authentication:sign_in_providers"]),{data:K}=(0,i.useProjectSettingsV2Query)({projectRef:O}),q=K?.app_config?.protocol??"https",V=K?.app_config?.endpoint??"",z=`${q}://${V??""}`;return(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h2",{className:"doc-heading",children:"User Management"}),(0,s.jsx)("div",{className:"doc-section",children:(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Supabase makes it easy to manage your users."}),(0,s.jsxs)("p",{children:["Supabase assigns each user a unique ID. You can reference this ID anywhere in your database. For example, you might create a ",(0,s.jsx)("code",{children:"profiles"})," table references the user using a ",(0,s.jsx)("code",{children:"user_id"})," field."]}),(0,s.jsx)("p",{children:"Supabase already has built in the routes to sign up, login, and log out for managing users in your apps and websites."})]})}),(0,s.jsx)("h2",{className:"doc-heading",children:"Sign up"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Allow your users to sign up and create a new account."}),(0,s.jsx)("p",{children:'After they have signed up, all interactions using the Supabase JS client will be performed as "that user".'})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(r=z,o=D,l=H,{title:"User signup",bash:{language:"bash",code:`
+curl -X POST '${r}/auth/v1/signup' \\
+-H "apikey: ${o}" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "email": "someone@email.com",
+  "password": "${l}"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.signUp({
+  email: 'someone@email.com',
+  password: '${l}'
+})
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Log in with Email/Password"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"If an account is created, users can login to your app."}),(0,s.jsx)("p",{children:'After they have logged in, all interactions using the Supabase JS client will be performed as "that user".'})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(c=z,d=D,h=H,{title:"User login",bash:{language:"bash",code:`
+curl -X POST '${c}/auth/v1/token?grant_type=password' \\
+-H "apikey: ${d}" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "email": "someone@email.com",
+  "password": "${h}"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.signInWithPassword({
+  email: 'someone@email.com',
+  password: '${h}'
+})
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Log in with Magic Link via Email"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Send a user a passwordless link which they can use to redeem an access_token."}),(0,s.jsx)("p",{children:'After they have clicked the link, all interactions using the Supabase JS client will be performed as "that user".'})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(p=z,m=D,{title:"User login",bash:{language:"bash",code:`
+curl -X POST '${p}/auth/v1/magiclink' \\
+-H "apikey: ${m}" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "email": "someone@email.com"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.signInWithOtp({
+  email: 'someone@email.com'
+})
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Sign Up with Phone/Password"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"A phone number can be used instead of an email as a primary account confirmation mechanism."}),(0,s.jsx)("p",{children:"The user will receive a mobile OTP via sms with which they can verify that they control the phone number."}),(0,s.jsx)("p",{children:"You must enter your own twilio credentials on the auth settings page to enable sms confirmations."})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(g=z,x=D,{title:"Phone Signup",bash:{language:"bash",code:`
+curl -X POST '${g}/auth/v1/signup' \\
+-H "apikey: ${x}" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "phone": "+13334445555",
+  "password": "some-password"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.signUp({
+  phone: '+13334445555',
+  password: 'some-password'
+})
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Login via SMS OTP"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"SMS OTPs work like magic links, except you have to provide an interface for the user to verify the 6 digit number they receive."}),(0,s.jsx)("p",{children:"You must enter your own twilio credentials on the auth settings page to enable SMS-based Logins."})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(j=z,b=D,{title:"Phone Login",bash:{language:"bash",code:`
+curl -X POST '${j}/auth/v1/otp' \\
+-H "apikey: ${b}" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "phone": "+13334445555"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.signInWithOtp({
+  phone: '+13334445555'
+})
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Verify an SMS OTP"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Once the user has received the OTP, have them enter it in a form and send it for verification"}),(0,s.jsx)("p",{children:"You must enter your own twilio credentials on the auth settings page to enable SMS-based OTP verification."})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(y=z,f=D,{title:"Verify Pin",bash:{language:"bash",code:`
+curl -X POST '${y}/auth/v1/verify' \\
+-H "apikey: ${f}" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "type": "sms",
+  "phone": "+13334445555",
+  "token": "123456"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.verifyOtp({
+  phone: '+13334445555',
+  token: '123456',
+  type: 'sms'
+})
+`}})})})]}),B&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h2",{className:"doc-heading",children:"Log in with Third Party OAuth"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsxs)("p",{children:["Users can log in with Third Party OAuth like Google, Facebook, GitHub, and more. You must first enable each of these in the Auth Providers settings"," ",(0,s.jsx)("span",{className:"text-green-500",children:(0,s.jsx)(n.default,{href:`/project/${R.query.ref}/auth/providers`,children:"here"},"AUTH")})," ","."]}),(0,s.jsxs)("p",{children:["View all the available"," ",(0,s.jsx)("a",{href:`${A.DOCS_URL}/guides/auth#providers`,target:"_blank",rel:"noreferrer",children:"Third Party OAuth providers"})]}),(0,s.jsx)("p",{children:'After they have logged in, all interactions using the Supabase JS client will be performed as "that user".'}),(0,s.jsxs)("p",{children:["Generate your Client ID and secret from:"," ",(0,s.jsx)("a",{href:"https://console.developers.google.com/apis/credentials",target:"_blank",rel:"noreferrer",children:"Google"}),","," ",(0,s.jsx)("a",{href:"https://github.com/settings/applications/new",target:"_blank",rel:"noreferrer",children:"GitHub"}),","," ",(0,s.jsx)("a",{href:"https://gitlab.com/oauth/applications",target:"_blank",rel:"noreferrer",children:"GitLab"}),","," ",(0,s.jsx)("a",{href:"https://developers.facebook.com/apps/",target:"_blank",rel:"noreferrer",children:"Facebook"}),","," ",(0,s.jsx)("a",{href:"https://support.atlassian.com/bitbucket-cloud/docs/use-oauth-on-bitbucket-cloud/",target:"_blank",rel:"noreferrer",children:"Bitbucket"}),"."]})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(v=z,w=D,{title:"Third Party Login",bash:{language:"bash",code:`
+curl -X GET '${v}/auth/v1/authorize?provider=github' \\
+-H "apikey: ${w}" \\
+-H "Authorization: Bearer USER_TOKEN" \\
+-H "Content-Type: application/json"
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.signInWithOAuth({
+  provider: 'github'
+})
+`}})})})]})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"User"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsx)("article",{className:"code-column text-foreground",children:(0,s.jsx)("p",{children:"Get the JSON object for the logged in user."})}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(N=z,S=D,{title:"Get User",bash:{language:"bash",code:`
+curl -X GET '${N}/auth/v1/user' \\
+-H "apikey: ${S}" \\
+-H "Authorization: Bearer USER_TOKEN"
+`},js:{language:"js",code:`
+const { data: { user } } = await supabase.auth.getUser()
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Forgotten Password Email"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsx)("article",{className:"code-column text-foreground",children:(0,s.jsx)("p",{children:'Sends the user a log in link via email. Once logged in you should direct the user to a new password form. And use "Update User" below to save the new password.'})}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:($=z,k=D,{title:"Password Recovery",bash:{language:"bash",code:`
+      curl -X POST '${$}/auth/v1/recover' \\
+-H "apikey: ${k}" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "email": "someone@email.com"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.resetPasswordForEmail(email)
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Update User"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsx)("article",{className:"code-column text-foreground",children:(0,s.jsx)("p",{children:"Update the user with a new email or password. Each key (email, password, and data) is optional"})}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(_=z,P=D,{title:"Update User",bash:{language:"bash",code:`
+      curl -X PUT '${_}/auth/v1/user' \\
+-H "apikey: ${P}" \\
+-H "Authorization: Bearer USER_TOKEN" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "email": "someone@email.com",
+  "password": "new-password",
+  "data": {
+    "key": "value"
+  }
+}'
+`},js:{language:"js",code:`
+const { data, error } = await supabase.auth.updateUser({
+  email: "new@email.com",
+  password: "new-password",
+  data: { hello: 'world' }
+})
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Log out"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsx)("article",{className:"code-column text-foreground",children:(0,s.jsx)("p",{children:'After calling log out, all interactions using the Supabase JS client will be "anonymous".'})}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(E=z,L=D,{title:"User logout",bash:{language:"bash",code:`
+curl -X POST '${E}/auth/v1/logout' \\
+-H "apikey: ${L}" \\
+-H "Content-Type: application/json" \\
+-H "Authorization: Bearer USER_TOKEN"
+`},js:{language:"js",code:`
+let { error } = await supabase.auth.signOut()
+`}})})})]}),(0,s.jsx)("h2",{className:"doc-heading",children:"Send a User an Invite over Email"}),(0,s.jsxs)("div",{className:"doc-section ",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Send a user a passwordless link which they can use to sign up and log in."}),(0,s.jsx)("p",{children:'After they have clicked the link, all interactions using the Supabase JS client will be performed as "that user".'}),(0,s.jsxs)("p",{children:["This endpoint requires you use the ",(0,s.jsx)("code",{children:"service_role_key"})," when initializing the client, and should only be invoked from the server, never from the client."]})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:e,snippet:(C=z,U=D,{title:"Invite User",bash:{language:"bash",code:`
+curl -X POST '${C}/auth/v1/invite' \\
+-H "apikey: ${U}" \\
+-H "Authorization: Bearer SERVICE_ROLE_KEY" \\
+-H "Content-Type: application/json" \\
+-d '{
+  "email": "someone@email.com"
+}'
+`},js:{language:"js",code:`
+let { data, error } = await supabase.auth.admin.inviteUserByEmail('someone@email.com')
+`}})})})]})]})},O=({selectedLang:e,page:a,showApiKey:t})=>{let n=a?.toLowerCase();return"intro"==n||null==n?(0,s.jsx)(v,{selectedLang:e}):"auth"==n?(0,s.jsx)(g,{selectedLang:e,showApiKey:t}):"users-management"==n?(0,s.jsx)(R,{selectedLang:e,showApiKey:t}):"tables-intro"==n?(0,s.jsx)(C,{selectedLang:e}):"rpc-intro"==n?(0,s.jsx)(w,{}):(0,s.jsxs)("div",{children:[(0,s.jsx)("h2",{className:"m-4",children:"Not found"}),(0,s.jsx)("p",{className:"m-4",children:" Looks like you went somewhere that nobody knows."})]})};var D=e.i(546024),B=e.i(874311);let K={name:"hide",key:"SUPABASE_KEY"},q=({selectedLang:e,selectedApiKey:n,setSelectedLang:i,setSelectedApiKey:l})=>{let{ref:c}=(0,a.useParams)(),{canReadAPIKeys:d}=(0,o.useApiKeysVisibility)(),{data:u=[],isLoading:h}=(0,r.useAPIKeysQuery)({projectRef:c,reveal:!1},{enabled:d}),p=(0,t.useMemo)(()=>u.filter(({type:e})=>"legacy"===e),[u]),m=(0,t.useMemo)(()=>u.filter(({type:e})=>"publishable"===e),[u]),g=(0,t.useMemo)(()=>u.filter(({type:e})=>"secret"===e),[u]);return(0,s.jsx)("div",{className:"p-1 w-1/2 ml-auto",children:(0,s.jsxs)("div",{className:"z-0 flex justify-end",children:[(0,s.jsx)("button",{type:"button",onClick:()=>i("js"),className:`${"js"==e?"bg-surface-100 font-medium text-foreground":"bg-alternative text-foreground-lighter"} relative inline-flex items-center border-r border-background p-1 px-2 text-sm transition hover:text-foreground focus:outline-none`,children:"JavaScript"}),(0,s.jsx)("button",{type:"button",onClick:()=>i("bash"),className:`${"bash"==e?"bg-surface-100 font-medium text-foreground":"bg-alternative text-foreground-lighter"} relative inline-flex items-center border-r border-background p-1 px-2 text-sm transition hover:text-foreground focus:outline-none`,children:"Bash"}),"bash"==e&&d&&!h&&u&&u.length>0&&(0,s.jsxs)("div",{className:"flex gap-x-1",children:[(0,s.jsxs)("div",{className:"flex items-center gap-2 p-1 pl-2 text-xs text-foreground-lighter",children:[(0,s.jsx)(D.Key,{size:12,strokeWidth:1.5}),(0,s.jsx)("span",{children:"Project API key:"})]}),(0,s.jsxs)(B.DropdownMenu,{children:[(0,s.jsx)(B.DropdownMenuTrigger,{asChild:!0,children:(0,s.jsx)(b.Button,{type:"outline",children:"hide"===n.name?"Hide keys":n.name})}),(0,s.jsx)(B.DropdownMenuContent,{align:"end",side:"bottom",children:(0,s.jsxs)(B.DropdownMenuRadioGroup,{value:n.key,children:[(0,s.jsx)(B.DropdownMenuRadioItem,{value:K.key,onClick:()=>l(K),children:"Hide keys"},"hide"),m.length>0&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)(B.DropdownMenuSeparator,{}),(0,s.jsx)(B.DropdownMenuLabel,{children:"Publishable keys"}),m.map(e=>{let a=e.api_key;return(0,s.jsx)(B.DropdownMenuRadioItem,{value:a,onClick:()=>l({name:`Publishable key: ${e.name}`,key:a}),children:e.name},e.id)})]}),g.length>0&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)(B.DropdownMenuSeparator,{}),(0,s.jsx)(B.DropdownMenuLabel,{children:"Secret keys"}),g.map(e=>{let a=e.prefix+"...";return(0,s.jsx)(B.DropdownMenuRadioItem,{value:a,onClick:()=>l({name:`Secret key: ${e.name}`,key:a}),children:e.name},e.id)})]}),(0,s.jsx)(B.DropdownMenuSeparator,{}),(0,s.jsxs)(B.DropdownMenuGroup,{children:[(0,s.jsx)(B.DropdownMenuLabel,{children:"JWT-based legacy keys"}),p.map(e=>{let a=e.api_key;return(0,s.jsx)(B.DropdownMenuRadioItem,{value:a,onClick:()=>l({name:`Legacy key: ${e.name}`,key:a}),children:e.name},e.id)})]})]})})]})]})]})})};var V=e.i(219195),z=e.i(902858),Y=e.i(246806),F=e.i(171997);let G=e=>(0,s.jsx)("div",{style:{minHeight:"auto"},children:(0,s.jsx)(F.Input.TextArea,{...e,label:e.label,size:"small",rows:1,style:{height:"auto",overflow:"hidden",resize:"none"}})});var M=e.i(714403),Q=e.i(2579),W=e.i(635494),X=e.i(585915);let J=({content:e,metadata:a,onChange:n=Y.default})=>{var r;let i,o,l,c,d,u=(i=`Note:
+This is a Primary Key.<pk/>`,o=`Note:
+This is a Foreign Key to`,l=(r=e||"").lastIndexOf(i),c=r.lastIndexOf(o),d=r,l>=0&&(d=d.substring(0,l)),c>=0&&(d=d.substring(0,c)),d).trim(),[h,p]=(0,t.useState)(u),[m,g]=(0,t.useState)(!1),{data:x}=(0,W.useSelectedProjectQuery)(),{table:j,column:y,rpc:f}=a,v=h!=u,{can:w}=(0,Q.useAsyncCheckPermissions)(z.PermissionAction.TENANT_SQL_QUERY,"*"),N=async()=>{if(m||!w)return!1;g(!0);let e="",s=h.replaceAll("'","''");if(j&&y&&(e=`comment on column public."${j}"."${y}" is '${s}';`),j&&!y&&(e=`comment on table public."${j}" is '${s}';`),f&&(e=`comment on function "${f}" is '${s}';`),e)try{await (0,M.executeSql)({projectRef:x?.ref,connectionString:x?.connectionString,sql:e}),await (0,U.timeout)(500),S.toast.success("Successfully updated description")}catch(e){S.toast.error(`Failed to update description: ${e.message}`)}n(h),g(!1)};return w?(0,s.jsxs)("div",{className:"space-y-2",children:[(0,s.jsx)(G,{className:"w-full",placeholder:"Click to edit.",value:h,onChange:e=>p(e.target.value)}),(0,s.jsxs)("div",{className:`flex items-center gap-2 ${v?"opacity-100":"h-0 cursor-default opacity-0"} transition duration-150`,children:[(0,s.jsx)(b.Button,{type:"default",disabled:!v,onClick:()=>{p(u),g(!1)},children:"Cancel"}),(0,s.jsx)(b.Button,{disabled:!v,onClick:N,children:m?(0,s.jsx)(X.Loader,{className:"mx-auto animate-spin",size:14,strokeWidth:2}):(0,s.jsx)("span",{children:"Save"})})]})]}):(0,s.jsx)("span",{className:`block text-sm ${h?"text-foreground":""}`,children:h||"No description"})};var Z=Y,ee=e.i(587433),es=e.i(454370),ea=e.i(667042);let et=({name:e,type:a,format:t,required:n,description:r,metadata:i={},onDesciptionUpdated:o=Z.default})=>(0,s.jsxs)(s.Fragment,{children:[(0,s.jsxs)("div",{className:"mb-4 flex items-center justify-between ",children:[(0,s.jsx)("div",{className:"flex gap-2 items-center",children:(0,s.jsxs)("div",{className:"flex items-center gap-2",children:[(0,s.jsx)("label",{className:"font-mono text-xs uppercase text-foreground-lighter  min-w-[55px]",children:"Column"}),(0,s.jsx)("div",{className:"flex items-center gap-4",children:(0,s.jsx)("span",{className:"text-md text-foreground pb-0.5",children:e})})]})}),(0,s.jsx)(ee.Badge,{variant:n?"warning":"default",children:n?"Required":"Optional"})]}),t&&(0,s.jsxs)("div",{className:"grid gap-2 mt-6",children:[(0,s.jsxs)("div",{className:"mb-4 flex items-center gap-2",children:[(0,s.jsx)("label",{className:"font-mono text-xs uppercase text-foreground-lighter min-w-[55px]",children:"Type"}),(0,s.jsx)("div",{children:(0,s.jsx)("span",{className:"flex grow-0 bg-slate-300 px-2 py-0.5 rounded-md text-foreground-light",children:(0,s.jsxs)("span",{className:"flex items-center gap-2 text-sm",children:[(0,s.jsx)(es.Code,{size:"14"}),(0,s.jsx)("span",{children:function(e,s){if(void 0===e&&("jsonb"===s||"json"===s))return"json";switch(e){case"string":return"string";case"integer":case"number":return"number";case"json":return"json";case"boolean":return"boolean";default:return""}}(a,t)})]})})})]}),(0,s.jsxs)("div",{className:"mb-4 flex items-center gap-2",children:[(0,s.jsx)("label",{className:"font-mono text-xs uppercase text-foreground-lighter min-w-[55px]",children:"Format"}),(0,s.jsx)("div",{children:(0,s.jsx)("span",{className:"flex grow-0 bg-slate-300 px-2 py-0.5 rounded-md text-foreground-light",children:(0,s.jsxs)("span",{className:"flex items-center gap-2 text-sm",children:[(0,s.jsx)(ea.Database,{size:"14"}),(0,s.jsx)("span",{children:t})]})})})]})]}),!1!==r&&(0,s.jsxs)("div",{className:"grid gap-2 mt-2",children:[(0,s.jsx)("label",{className:"font-mono text-xs uppercase text-foreground-lighter",children:"Description"}),(0,s.jsx)(J,{content:r?.toString(),metadata:i,onChange:o})]})]});var en=e.i(71005),er=e.i(984278);let ei=({apiEndpoint:e,resourceId:t,resources:n,selectedLang:r,showApiKey:i,refreshDocs:o})=>{let l,c,d,h,p,g,x,j,b,y,f,v,w,N,S,$,k,_,P,E,L,C,T,U,H,R,O,D,B,K,q,z,Y,F,G,M,Q,{ref:W}=(0,a.useParams)(),{data:X}=(0,en.useCustomDomainsQuery)({projectRef:W}),{realtimeAll:Z}=(0,I.useIsFeatureEnabled)(["realtime:all"]),{data:ee}=(0,er.useProjectJsonSchemaQuery)({projectRef:W}),{paths:es,definitions:ea}=ee||{},ei=X?.customDomain?.status==="active"?`https://${X.customDomain.hostname}`:e,eo=i||"SUPABASE_KEY",el=es?.[`/${t}`],ec=ea?.[t],ed=n[t],eu=ec?.description||"",eh=Object.keys(el??{}).map(e=>e.toUpperCase()),ep=Object.entries(ec?.properties??[]).map(([e,s])=>({...s,id:e,required:ec?.required?.includes(e)}));return es&&ea?(0,s.jsxs)(s.Fragment,{children:[(0,s.jsxs)("h2",{className:"doc-section__table-name text-foreground mt-0 flex items-center px-6 gap-2",children:[(0,s.jsx)("span",{className:"bg-slate-300 p-2 rounded-lg",children:(0,s.jsx)(V.Table2,{size:18})}),(0,s.jsx)("span",{className:"text-2xl font-bold",children:t})]}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("label",{className:"font-mono text-xs uppercase text-foreground-lighter inline-block mb-2",children:"Description"}),(0,s.jsx)(J,{content:eu,metadata:{table:t},onChange:o})]}),(0,s.jsx)("article",{className:"code"})]}),ep.length>0&&(0,s.jsx)("div",{children:ep.map(e=>(0,s.jsxs)("div",{className:"doc-section py-4",children:[(0,s.jsx)("div",{className:"code-column text-foreground",children:(0,s.jsx)(et,{name:e.id,type:e.type,format:e.format,required:e.required,description:e.description,metadata:{table:t,column:e.id},onDesciptionUpdated:o},e.id)}),(0,s.jsx)("div",{className:"code",children:(0,s.jsx)(u,{selectedLang:r,snippet:m({title:`Select ${e.id}`,resourceId:t,endpoint:ei,apiKey:eo,columnName:e.id})})})]},e.id))}),eh.includes("GET")&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h3",{className:"text-foreground mt-4 px-6",children:"Read rows"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsxs)("p",{children:["To read rows in ",(0,s.jsx)("code",{children:t}),", use the ",(0,s.jsx)("code",{children:"select"})," method."]}),(0,s.jsx)("p",{children:(0,s.jsx)("a",{href:`${A.DOCS_URL}/reference/javascript/select`,target:"_blank",rel:"noreferrer",children:"Learn more"})})]}),(0,s.jsxs)("article",{className:"code",children:[(0,s.jsx)(u,{selectedLang:r,snippet:(l=t,c=ei,d=eo,{title:"Read all rows",bash:{language:"bash",code:`
+curl '${c}/rest/v1/${l}?select=*' \\
+-H "apikey: ${d}" \\
+-H "Authorization: Bearer ${d}"
+`},js:{language:"js",code:`
+let { data: ${l}, error } = await supabase
+  .from('${l}')
+  .select('*')
+`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:m({resourceId:t,endpoint:ei,apiKey:eo})}),(0,s.jsx)(u,{selectedLang:r,snippet:(h=t,p=ei,g=eo,{title:"Read referenced tables",bash:{language:"bash",code:`
+curl '${p}/rest/v1/${h}?select=some_column,other_table(foreign_key)' \\
+-H "apikey: ${g}" \\
+-H "Authorization: Bearer ${g}"
+`},js:{language:"js",code:`
+let { data: ${h}, error } = await supabase
+  .from('${h}')
+  .select(\`
+    some_column,
+    other_table (
+      foreign_key
+    )
+  \`)
+`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:(x=t,j=ei,b=eo,{title:"With pagination",bash:{language:"bash",code:`
+curl '${j}/rest/v1/${x}?select=*' \\
+-H "apikey: ${b}" \\
+-H "Authorization: Bearer ${b}" \\
+-H "Range: 0-9"
+`},js:{language:"js",code:`
+let { data: ${x}, error } = await supabase
+  .from('${x}')
+  .select('*')
+  .range(0, 9)
+`}})})]})]}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("h4",{className:"mt-0 text-white",children:"Filtering"}),(0,s.jsx)("p",{children:"Supabase provides a wide range of filters."}),(0,s.jsx)("p",{children:(0,s.jsx)("a",{href:`${A.DOCS_URL}/reference/javascript/using-filters`,target:"_blank",rel:"noreferrer",children:"Learn more"})})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:r,snippet:(y=t,f=ei,v=eo,{title:"With filtering",bash:{language:"bash",code:`
+curl --get '${f}/rest/v1/${y}' \\
+-H "apikey: ${v}" \\
+-H "Authorization: Bearer ${v}" \\
+-H "Range: 0-9" \\
+-d "select=*" \\
+\\
+\`# Filters\` \\
+-d "column=eq.Equal+to" \\
+-d "column=gt.Greater+than" \\
+-d "column=lt.Less+than" \\
+-d "column=gte.Greater+than+or+equal+to" \\
+-d "column=lte.Less+than+or+equal+to" \\
+-d "column=like.*CaseSensitive*" \\
+-d "column=ilike.*CaseInsensitive*" \\
+-d "column=is.null" \\
+-d "column=in.(Array,Values)" \\
+-d "column=neq.Not+equal+to" \\
+\\
+\`# Arrays\` \\
+-d "array_column=cs.{array,contains}" \\
+-d "array_column=cd.{contained,by}" \\
+\\
+\`# Logical operators\` \\
+-d "column=not.like.Negate+filter" \\
+-d "or=(some_column.eq.Some+value,other_column.eq.Other+value)"
+`},js:{language:"js",code:`
+let { data: ${y}, error } = await supabase
+  .from('${y}')
+  .select("*")
+
+  // Filters
+  .eq('column', 'Equal to')
+  .gt('column', 'Greater than')
+  .lt('column', 'Less than')
+  .gte('column', 'Greater than or equal to')
+  .lte('column', 'Less than or equal to')
+  .like('column', '%CaseSensitive%')
+  .ilike('column', '%CaseInsensitive%')
+  .is('column', null)
+  .in('column', ['Array', 'Values'])
+  .neq('column', 'Not equal to')
+
+  // Arrays
+  .contains('array_column', ['array', 'contains'])
+  .containedBy('array_column', ['contained', 'by'])
+
+  // Logical operators
+  .not('column', 'like', 'Negate filter')
+  .or('some_column.eq.Some value, other_column.eq.Other value')
+`}})})})]})]}),eh.includes("POST")&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h3",{className:"text-foreground mt-4 px-6",children:"Insert rows"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsxs)("p",{children:[(0,s.jsx)("code",{children:"insert"})," lets you insert into your tables. You can also insert in bulk and do UPSERT."]}),(0,s.jsxs)("p",{children:[(0,s.jsx)("code",{children:"insert"})," will also return the replaced values for UPSERT."]}),(0,s.jsx)("p",{children:(0,s.jsx)("a",{href:`${A.DOCS_URL}/reference/javascript/insert`,target:"_blank",rel:"noreferrer",children:"Learn more"})})]}),(0,s.jsxs)("article",{className:"code",children:[(0,s.jsx)(u,{selectedLang:r,snippet:(w=t,N=ei,S=eo,{title:"Insert a row",bash:{language:"bash",code:`
+curl -X POST '${N}/rest/v1/${w}' \\
+-H "apikey: ${S}" \\
+-H "Authorization: Bearer ${S}" \\
+-H "Content-Type: application/json" \\
+-H "Prefer: return=minimal" \\
+-d '{ "some_column": "someValue", "other_column": "otherValue" }'
+`},js:{language:"js",code:`
+const { data, error } = await supabase
+  .from('${w}')
+  .insert([
+    { some_column: 'someValue', other_column: 'otherValue' },
+  ])
+  .select()
+`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:($=t,k=ei,_=eo,{title:"Insert many rows",bash:{language:"bash",code:`
+curl -X POST '${k}/rest/v1/${$}' \\
+-H "apikey: ${_}" \\
+-H "Authorization: Bearer ${_}" \\
+-H "Content-Type: application/json" \\
+-d '[{ "some_column": "someValue" }, { "other_column": "otherValue" }]'
+`},js:{language:"js",code:`
+const { data, error } = await supabase
+  .from('${$}')
+  .insert([
+    { some_column: 'someValue' },
+    { some_column: 'otherValue' },
+  ])
+  .select()
+`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:(P=t,E=ei,L=eo,{title:"Upsert matching rows",bash:{language:"bash",code:`
+curl -X POST '${E}/rest/v1/${P}' \\
+-H "apikey: ${L}" \\
+-H "Authorization: Bearer ${L}" \\
+-H "Content-Type: application/json" \\
+-H "Prefer: resolution=merge-duplicates" \\
+-d '{ "some_column": "someValue", "other_column": "otherValue" }'
+`},js:{language:"js",code:`
+const { data, error } = await supabase
+  .from('${P}')
+  .upsert({ some_column: 'someValue' })
+  .select()
+`}})})]})]})]}),eh.includes("PATCH")&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h3",{className:"text-foreground mt-4 px-6",children:"Update rows"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsxs)("p",{children:[(0,s.jsx)("code",{children:"update"})," lets you update rows. ",(0,s.jsx)("code",{children:"update"})," will match all rows by default. You can update specific rows using horizontal filters, e.g. ",(0,s.jsx)("code",{children:"eq"}),", ",(0,s.jsx)("code",{children:"lt"}),", and ",(0,s.jsx)("code",{children:"is"}),"."]}),(0,s.jsxs)("p",{children:[(0,s.jsx)("code",{children:"update"})," will also return the replaced values for UPDATE."]}),(0,s.jsx)("p",{children:(0,s.jsx)("a",{href:`${A.DOCS_URL}/reference/javascript/update`,target:"_blank",rel:"noreferrer",children:"Learn more"})})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:r,snippet:(C=t,T=ei,U=eo,{title:"Update matching rows",bash:{language:"bash",code:`
+curl -X PATCH '${T}/rest/v1/${C}?some_column=eq.someValue' \\
+-H "apikey: ${U}" \\
+-H "Authorization: Bearer ${U}" \\
+-H "Content-Type: application/json" \\
+-H "Prefer: return=minimal" \\
+-d '{ "other_column": "otherValue" }'
+`},js:{language:"js",code:`
+const { data, error } = await supabase
+  .from('${C}')
+  .update({ other_column: 'otherValue' })
+  .eq('some_column', 'someValue')
+  .select()
+`}})})})]})]}),eh.includes("DELETE")&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h3",{className:"text-foreground mt-4 px-6",children:"Delete rows"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsxs)("p",{children:[(0,s.jsx)("code",{children:"delete"})," lets you delete rows. ",(0,s.jsx)("code",{children:"delete"})," will match all rows by default, so remember to specify your filters!"]}),(0,s.jsx)("p",{children:(0,s.jsx)("a",{href:`${A.DOCS_URL}/reference/javascript/delete`,target:"_blank",rel:"noreferrer",children:"Learn more"})})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:r,snippet:(H=t,R=ei,O=eo,{title:"Delete matching rows",bash:{language:"bash",code:`
+curl -X DELETE '${R}/rest/v1/${H}?some_column=eq.someValue' \\
+-H "apikey: ${O}" \\
+-H "Authorization: Bearer ${O}"
+`},js:{language:"js",code:`
+const { error } = await supabase
+  .from('${H}')
+  .delete()
+  .eq('some_column', 'someValue')
+`}})})})]})]}),Z&&(eh.includes("DELETE")||eh.includes("POST")||eh.includes("PATCH"))&&(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h3",{className:"text-foreground mt-4 px-6",children:"Subscribe to changes"}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("p",{children:"Supabase provides realtime functionality and broadcasts database changes to authorized users depending on Row Level Security (RLS) policies."}),(0,s.jsx)("p",{children:(0,s.jsx)("a",{href:`${A.DOCS_URL}/reference/javascript/subscribe`,target:"_blank",rel:"noreferrer",children:"Learn more"})})]}),(0,s.jsxs)("article",{className:"code",children:[(0,s.jsx)(u,{selectedLang:r,snippet:(D=ed.camelCase,B=t,{title:"Subscribe to all events",bash:{language:"bash",code:"# Realtime streams are only supported by our client libraries"},js:{language:"js",code:`
+const ${D} = supabase.channel('custom-all-channel')
+  .on(
+    'postgres_changes',
+    { event: '*', schema: 'public', table: '${B}' },
+    (payload) => {
+      console.log('Change received!', payload)
+    }
+  )
+  .subscribe()`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:(K=ed.camelCase,q=t,{title:"Subscribe to inserts",bash:{language:"bash",code:"# Realtime streams are only supported by our client libraries"},js:{language:"js",code:`
+const ${K} = supabase.channel('custom-insert-channel')
+  .on(
+    'postgres_changes',
+    { event: 'INSERT', schema: 'public', table: '${q}' },
+    (payload) => {
+      console.log('Change received!', payload)
+    }
+  )
+  .subscribe()`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:(z=ed.camelCase,Y=t,{title:"Subscribe to updates",bash:{language:"bash",code:"# Realtime streams are only supported by our client libraries"},js:{language:"js",code:`
+const ${z} = supabase.channel('custom-update-channel')
+  .on(
+    'postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: '${Y}' },
+    (payload) => {
+      console.log('Change received!', payload)
+    }
+  )
+  .subscribe()`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:(F=ed.camelCase,G=t,{title:"Subscribe to deletes",bash:{language:"bash",code:"# Realtime streams are only supported by our client libraries"},js:{language:"js",code:`
+const ${F} = supabase.channel('custom-delete-channel')
+  .on(
+    'postgres_changes',
+    { event: 'DELETE', schema: 'public', table: '${G}' },
+    (payload) => {
+      console.log('Change received!', payload)
+    }
+  )
+  .subscribe()`}})}),(0,s.jsx)(u,{selectedLang:r,snippet:(M=ed.camelCase,Q=t,{title:"Subscribe to specific rows",bash:{language:"bash",code:"# Realtime streams are only supported by our client libraries"},js:{language:"js",code:`
+const ${M} = supabase.channel('custom-filter-channel')
+  .on(
+    'postgres_changes',
+    { event: '*', schema: 'public', table: '${Q}', filter: 'column_name=eq.someValue' },
+    (payload) => {
+      console.log('Change received!', payload)
+    }
+  )
+  .subscribe()`}})})]})]})]})]}):null},eo=({rpcId:e,rpcs:t,paths:n,selectedLang:r,showApiKey:o,refreshDocs:l})=>{let{ref:c}=(0,a.useParams)(),{data:d}=(0,i.useProjectSettingsV2Query)({projectRef:c}),h=d?.app_config?.protocol??"https",p=d?.app_config?.endpoint??"",m=`${h}://${p??""}`,g=t[e],x=`/rpc/${e}`,j=n&&x in n?n[x]:void 0,{parameters:b,summary:y}=j?.post||{},f=Object.entries(b&&b[0]&&b[0].schema&&b[0].schema.properties?b[0].schema.properties:{}).map(([e,s])=>({name:e,...s})).filter(e=>!!e.name);return j?(0,s.jsxs)(s.Fragment,{children:[(0,s.jsx)("h2",{className:"text-foreground mt-0",children:(0,s.jsx)("span",{className:"px-6 text-2xl",children:g.id})}),(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsxs)("article",{className:"code-column text-foreground",children:[(0,s.jsx)("label",{className:"font-mono text-xs uppercase text-foreground-lighter",children:"Description"}),(0,s.jsx)(J,{content:y??"",metadata:{rpc:e},onChange:l})]}),(0,s.jsx)("article",{className:"code",children:(0,s.jsx)(u,{selectedLang:r,snippet:(({rpcName:e,rpcParams:s,endpoint:a,apiKey:t,showBearer:n=!0})=>{let r=s.map(e=>`"${e.name}": "value"`).join(", "),i=!s.length,o=i?"":`
+-d '{ ${r} }' \\`,l=i?"":`, {${s.length?s.map(e=>`
+    ${e.name}`).join(", ").concat("\n  "):""}}`;return{title:"Invoke function ",bash:{language:"bash",code:`
+curl -X POST '${a}/rest/v1/rpc/${e}' \\${o}
+-H "Content-Type: application/json" \\
+-H "apikey: ${t}" ${n?`\\
+-H "Authorization: Bearer ${t}"`:""}
+`},js:{language:"js",code:`
+let { data, error } = await supabase
+  .rpc('${e}'${l})
+if (error) console.error(error)
+else console.log(data)
+`}}})({rpcName:e,rpcCamelCase:g.camelCase,rpcParams:f,apiKey:o||"SUPABASE_KEY",endpoint:m})})})]}),f.length>0&&(0,s.jsxs)("div",{children:[(0,s.jsx)("h3",{className:"text-foreground mt-0 px-6 capitalize",children:"Function Arguments"}),f.map((e,a)=>(0,s.jsxs)("div",{className:"doc-section",children:[(0,s.jsx)("article",{className:"code-column text-foreground",children:(0,s.jsx)(et,{name:e.name,type:e.type,format:e.format,required:!0,description:!1},e.name)}),(0,s.jsx)("article",{className:"code"})]},a))]})]}):null};var el=e.i(448710),ec=e.i(463333),ed=e.i(196621);function eu({error:e}){return(0,t.useEffect)(()=>{console.error("Error",e)},[]),(0,s.jsxs)("div",{className:"mx-auto flex h-full w-full flex-col items-center justify-center space-y-6",children:[(0,s.jsxs)("div",{className:"flex w-[320px] flex-col items-center justify-center space-y-3",children:[(0,s.jsx)("h4",{className:"text-lg",children:"Something went wrong 🤕"}),(0,s.jsx)("p",{className:"text-center text-sm text-foreground-light",children:"Sorry about that, please try again later or feel free to reach out to us if the problem persists."})]}),(0,s.jsxs)("div",{className:"flex items-center space-x-4",children:[(0,s.jsx)(b.Button,{asChild:!0,children:(0,s.jsx)(n.default,{href:"/projects",children:"Head back"})}),(0,s.jsx)(b.Button,{asChild:!0,type:"secondary",children:(0,s.jsx)(ed.SupportLink,{children:"Submit a support request"})})]}),(0,s.jsxs)("p",{className:"text-sm text-foreground-light",children:["Error: [",e?.code,"] ",e?.message]})]})}var eh=e.i(388147),ep=e.i(10758),em=e.i(951138),eg=e.i(837508),ex=e.i(825713),ej=e.i(852315),eb=e.i(636900),ey=e.i(182074),ef=e.i(310474);let ev=(0,em.withAuth)(function({title:e,children:t}){let n,r=(0,T.useRouter)(),{ref:i}=(0,a.useParams)(),{data:o}=(0,W.useSelectedProjectQuery)(),l=o?.status===eg.PROJECT_STATUS.INACTIVE,{data:c,isLoading:d,error:u}=(0,ep.useOpenAPISpecQuery)({projectRef:i},{enabled:!l}),h=(0,ec.useIsAPIDocsSidePanelEnabled)()&&r.pathname.endsWith("/graphiql"),{projectAuthAll:p}=(0,I.useIsFeatureEnabled)(["project_auth:all"]);if(u)return(0,s.jsx)(ex.ProjectLayout,{product:"API Docs",children:(0,s.jsx)(eu,{error:u})});let m=o?.ref??"default",g=(c?.tables??[]).map(e=>e.name),x=(c?.functions??[]).map(e=>e.name);return(0,s.jsx)(ex.ProjectLayout,{title:e||"API Docs",isLoading:d,product:"API Docs",productMenu:!h&&(0,s.jsx)(eh.ProductMenu,{page:(()=>{if(r.pathname.endsWith("graphiql"))return"graphiql";let{page:e,rpc:s,resource:a}=r.query;return e||a||s?e||s||a||"":"introduction"})(),menu:(n={authEnabled:p},[{title:"Getting Started",items:[{name:"Introduction",key:"introduction",url:`/project/${m}/api`,items:[]},{name:"Authentication",key:"auth",url:`/project/${m}/api?page=auth`,items:[]},...n?.authEnabled?[{name:"User Management",key:"users-management",url:`/project/${m}/api?page=users-management`,items:[]}]:[]]},{title:"Tables and Views",items:[{name:"Introduction",key:"tables-intro",url:`/project/${m}/api?page=tables-intro`,items:[]},...g.sort().map(e=>({name:e,key:e,url:`/project/${m}/api?resource=${e}`,items:[]}))]},{title:"Stored Procedures",items:[{name:"Introduction",key:"rpc-intro",url:`/project/${m}/api?page=rpc-intro`,items:[]},...x.map(e=>({name:e,key:e,url:`/project/${m}/api?rpc=${e}`,items:[]}))]},{title:"GraphQL",items:[{name:"GraphiQL",key:"graphiql",url:`/project/${m}/integrations/graphiql`,icon:(0,s.jsx)(ef.default,{src:`${A.BASE_PATH}/img/graphql.svg`,style:{width:"16px",height:"16px"},className:"text-foreground",preProcessor:e=>e.replace(/svg/,'svg class="m-auto text-color-inherit"')}),items:[],rightIcon:(0,s.jsx)(ej.ArrowUpRight,{strokeWidth:1,className:"h-4 w-4"})}]},{title:"More Resources",items:[{name:"Guides",key:"guides",url:A.DOCS_URL,icon:(0,s.jsx)(eb.Book,{size:14,strokeWidth:2}),items:[],isExternal:!0},{name:"API Reference",key:"api-reference",url:`${A.DOCS_URL}/guides/api`,icon:(0,s.jsx)(ey.BookOpen,{size:14,strokeWidth:2}),items:[],isExternal:!0}]}])}),children:t})}),ew=()=>(0,s.jsx)(eN,{});ew.getLayout=e=>(0,s.jsx)(el.default,{children:(0,s.jsx)(ev,{title:"API",children:e})});let eN=()=>{let e="rpc/",{ref:n,page:r,resource:o,rpc:l}=(0,a.useParams)(),[c,d]=(0,t.useState)("js"),[u,h]=(0,t.useState)({name:"hide",key:"SUPABASE_KEY"}),{data:p,error:m}=(0,i.useProjectSettingsV2Query)({projectRef:n}),{data:g,error:x,isLoading:j,refetch:b}=(0,er.useProjectJsonSchemaQuery)({projectRef:n}),{data:y}=(0,en.useCustomDomainsQuery)({projectRef:n}),f=async()=>await b(),v=p?.app_config?.protocol??"https",w=p?.app_config?.endpoint,N=y?.customDomain?.status==="active"?`https://${y.customDomain?.hostname}`:`${v}://${w??"-"}`,{paths:S}=g||{},$=o||l||r||"index",{resources:k,rpcs:A}=Object.entries(S||{}).reduce((s,[a])=>{let t=a.slice(1),n=t.replace(e,""),r=n.replace(/_/g," "),i=(0,U.snakeToCamel)(n),o={id:n,displayName:r,camelCase:i};return t.length?{resources:{...s.resources,...!t.includes(e)?{[n]:o}:{}},rpcs:{...s.rpcs,...t.includes(e)?{[n]:o}:{}}}:s},{resources:{},rpcs:{}});return m||x?(0,s.jsx)("div",{className:"p-6 mx-auto text-center sm:w-full md:w-3/4",children:(0,s.jsxs)("p",{className:"text-foreground-light",children:[(0,s.jsx)("p",{children:"Error connecting to API"}),(0,s.jsx)("p",{children:`${m||x}`})]})}):!j&&p&&g?(0,s.jsx)("div",{className:"w-full h-full overflow-y-auto Docs Docs--api-page",children:(0,s.jsxs)("div",{className:"Docs--inner-wrapper",children:[(0,s.jsx)("div",{className:"sticky top-0 z-40 flex flex-row-reverse w-full ",children:(0,s.jsx)(q,{selectedLang:c,selectedApiKey:u,setSelectedLang:d,setSelectedApiKey:h})}),(0,s.jsx)("div",{children:o?(0,s.jsx)(ei,{apiEndpoint:N,selectedLang:c,resourceId:o,resources:k,showApiKey:u.key,refreshDocs:f}):l?(0,s.jsx)(eo,{selectedLang:c,rpcId:l,paths:S,rpcs:A,showApiKey:u.key,refreshDocs:f}):(0,s.jsx)(O,{selectedLang:c,showApiKey:u.key,page:r})})]})},$):(0,s.jsx)("div",{className:"p-6 mx-auto text-center sm:w-full md:w-3/4",children:(0,s.jsx)("h3",{className:"text-xl",children:"Building docs ..."})})};e.s(["default",0,ew],919319)},437344,(e,s,a)=>{let t="/project/[ref]/api";(window.__NEXT_P=window.__NEXT_P||[]).push([t,()=>e.r(919319)]),s.hot&&s.hot.dispose(function(){window.__NEXT_P.push([t])})}]);
+
+//# debugId=5d438a95-daae-5836-fb03-ebe54db0150c
+//# sourceMappingURL=5f11079059e55679.js.map

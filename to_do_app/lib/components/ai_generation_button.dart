@@ -28,7 +28,7 @@ class _AiGenerationButtonState extends State<AiGenerationButton> {
 
   Future<void> callApi(BuildContext context) async {
     try {
-      AiTaskService.generateTasks(
+      await AiTaskService.generateTasks(
         goal: widget.goal.text,
         timeframe: widget.timeframe,
       ).then((response) {

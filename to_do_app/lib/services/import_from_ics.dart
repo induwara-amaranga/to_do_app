@@ -120,15 +120,23 @@ class ImportFromIcsService {
         "",
         "",
         "ICS",
+        "none", //18 completed at
+        [],
       ]);
-      NotificationService.scheduleInitialRemainderForTask(task['id'], context, {
-        'taskName': task['taskName'],
-        'dueDate': DateTimeUtilsHelper.formatDate(utcTime), //utc time??
-        'dueTime': DateTimeUtilsHelper.formatTime(utcTime),
-        'remainderAmount': remainderAmount,
-        'remainderType': remainderType,
-        'taskPriority': priority,
-      });
+      await NotificationService.scheduleInitialRemainderForTask(
+        task['id'],
+        context,
+        {
+          'taskName': task['taskName'],
+          'dueDate': DateTimeUtilsHelper.formatDate(utcTime), //utc time??
+          'dueTime': DateTimeUtilsHelper.formatTime(utcTime),
+          'remainderAmount': remainderAmount,
+          'remainderType': remainderType,
+          'taskPriority': priority,
+        },
+        db,
+        db.toDoList.length - 1,
+      );
     }
 
     db.updateDataBase();

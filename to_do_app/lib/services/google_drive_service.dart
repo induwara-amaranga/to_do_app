@@ -4,6 +4,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:to_do_app/services/google_sign.dart';
 
 class GoogleDriveService {
   // This is where Hive stores boxes by default
@@ -18,98 +19,98 @@ class GoogleDriveService {
   //   ],
   // );
 
-  static drive.DriveApi? _driveApi;
+  static final drive.DriveApi? _driveApi=GoogleAuthService.driveApi;
   GoogleSignInAccount? _account;
   static GoogleSignInAccount? account;
 
   static final storage = FlutterSecureStorage();
 
-  static Future<bool> restoreLastSession() async {
-    print("🔄 Trying to restore previous Google session...");
+  // static Future<bool> restoreLastSession() async {
+  //   print("🔄 Trying to restore previous Google session...");
 
-    final auth = await storage.read(key: 'drive_auth_token');
+  //   final auth = await storage.read(key: 'drive_auth_token');
 
-    if (auth == null) {
-      print("❌ No stored token. User must sign in once.");
-      return false;
-    }
+  //   if (auth == null) {
+  //     print("❌ No stored token. User must sign in once.");
+  //     return false;
+  //   }
 
-    final headers = {'Authorization': auth, 'X-Goog-AuthUser': '0'};
+  //   final headers = {'Authorization': auth, 'X-Goog-AuthUser': '0'};
 
-    try {
-      final client = _GoogleAuthClient(headers);
+  //   try {
+  //     final client = _GoogleAuthClient(headers);
 
-      _driveApi = drive.DriveApi(client);
+  //     _driveApi = drive.DriveApi(client);
 
-      // test token
-      //await _driveApi!.files.list(pageSize: 1);
+  //     // test token
+  //     //await _driveApi!.files.list(pageSize: 1);
 
-      print("✅ Restored Drive session without sign-in!");
-      return true;
-    } catch (e) {
-      print("❌ Saved token expired: $e");
-      return false;
-    }
-  }
+  //     print("✅ Restored Drive session without sign-in!");
+  //     return true;
+  //   } catch (e) {
+  //     print("❌ Saved token expired: $e");
+  //     return false;
+  //   }
+  // }
 
   /// --------------------------
   ///  SIGN IN & INIT DRIVE API
   /// --------------------------
-  static Future<GoogleSignInAccount?> initializeSignIn() async {
-    print("initializing google sign in...");
-    // 1️⃣ Initialize the singleton instance with your OAuth client IDs
-    await GoogleSignIn.instance.initialize(
-      clientId: androidClientId,
-      serverClientId: webClientId,
-    );
+  // static Future<GoogleSignInAccount?> initializeSignIn() async {
+  //   print("initializing google sign in...");
+  //   // 1️⃣ Initialize the singleton instance with your OAuth client IDs
+  //   await GoogleSignIn.instance.initialize(
+  //     clientId: androidClientId,
+  //     serverClientId: webClientId,
+  //   );
 
-    // 2️⃣ Attempt SILENT sign-in first
-    print("Trying silent sign-in...");
-    account = await GoogleSignIn.instance.attemptLightweightAuthentication();
+  //   // 2️⃣ Attempt SILENT sign-in first
+  //   print("Trying silent sign-in...");
+  //   account = await GoogleSignIn.instance.attemptLightweightAuthentication();
 
-    if (account != null) {
-      print("✅ Silent sign-in success: ${account!.email}");
-    } else {
-      print("❌ Silent sign-in failed,asking user to sign in...");
-      // 3️⃣ Fallback to UI sign-in
-      account = await GoogleSignIn.instance.authenticate(
-        scopeHint: ['https://www.googleapis.com/auth/calendar'],
-      );
-    }
+  //   if (account != null) {
+  //     print("✅ Silent sign-in success: ${account!.email}");
+  //   } else {
+  //     print("❌ Silent sign-in failed,asking user to sign in...");
+  //     // 3️⃣ Fallback to UI sign-in
+  //     account = await GoogleSignIn.instance.authenticate(
+  //       scopeHint: ['https://www.googleapis.com/auth/calendar'],
+  //     );
+  //   }
 
-    // // 2️⃣ Start the authentication flow
-    // account = await GoogleSignIn.instance.authenticate(
-    //   scopeHint: ['https://www.googleapis.com/auth/calendar'],
-    // );
-    if (account != null) {
-      // 3️⃣ Get OAuth headers to use with Google APIs
-      final headers = await account!.authorizationClient.authorizationHeaders([
-        drive.DriveApi.driveFileScope, // access only files your app creates
-        // drive.DriveApi.driveScope,   // use this only if you need full Drive access
-      ], promptIfNecessary: true);
+  //   // // 2️⃣ Start the authentication flow
+  //   // account = await GoogleSignIn.instance.authenticate(
+  //   //   scopeHint: ['https://www.googleapis.com/auth/calendar'],
+  //   // );
+  //   if (account != null) {
+  //     // 3️⃣ Get OAuth headers to use with Google APIs
+  //     final headers = await account!.authorizationClient.authorizationHeaders([
+  //       drive.DriveApi.driveFileScope, // access only files your app creates
+  //       // drive.DriveApi.driveScope,   // use this only if you need full Drive access
+  //     ], promptIfNecessary: true);
 
-      print('✅ Signed in as: ${account!.email}');
-      print('🔑 Access token: ${headers?['Authorization']}');
-      await storage.write(
-        key: 'drive_auth_token',
-        value: headers?['Authorization'],
-      );
-      if (headers == null) {
-        print('User not signed in');
-        return null;
-      }
-      final client = _GoogleAuthClient(headers);
+  //     print('✅ Signed in as: ${account!.email}');
+  //     print('🔑 Access token: ${headers?['Authorization']}');
+  //     await storage.write(
+  //       key: 'drive_auth_token',
+  //       value: headers?['Authorization'],
+  //     );
+  //     if (headers == null) {
+  //       print('User not signed in');
+  //       return null;
+  //     }
+  //     final client = _GoogleAuthClient(headers);
 
-      _driveApi = drive.DriveApi(client);
-      //final _driveApi = await getCalendarApi(headers);
-      print('✅ Google Calendar API initialized');
-      //_calendarApi = calendarApi;
-      return account;
-    } else {
-      print('❌ Sign-in failed');
-      return null;
-    }
-  }
+  //     _driveApi = drive.DriveApi(client);
+  //     //final _driveApi = await getCalendarApi(headers);
+  //     print('✅ Google Calendar API initialized');
+  //     //_calendarApi = calendarApi;
+  //     return account;
+  //   } else {
+  //     print('❌ Sign-in failed');
+  //     return null;
+  //   }
+  // }
 
   /// --------------------------
   ///  LIST FILES IN DRIVE
@@ -263,20 +264,21 @@ class GoogleDriveService {
   /// --------------------------
   ///  SIGN OUT
   /// --------------------------
-  static Future<void> signOut() async {
-    _driveApi = null;
-    await GoogleSignIn.instance.signOut();
-  }
-}
+  //   static Future<void> signOut() async {
+  //     _driveApi = null;
+  //     await GoogleSignIn.instance.signOut();
+  //   }
+  // }
 
-/// Custom client for authenticated Google requests
-class _GoogleAuthClient extends http.BaseClient {
-  final Map<String, String> headers;
-  final http.Client _inner = http.Client();
+  /// Custom client for authenticated Google requests
+  // class _GoogleAuthClient extends http.BaseClient {
+  //   final Map<String, String> headers;
+  //   final http.Client _inner = http.Client();
 
-  _GoogleAuthClient(this.headers);
+  //   _GoogleAuthClient(this.headers);
 
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) =>
-      _inner.send(request..headers.addAll(headers));
+  //   @override
+  //   Future<http.StreamedResponse> send(http.BaseRequest request) =>
+  //       _inner.send(request..headers.addAll(headers));
+  // }
 }

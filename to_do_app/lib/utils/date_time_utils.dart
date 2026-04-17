@@ -59,7 +59,7 @@ class DateTimeUtilsHelper {
   }
 
   static String formatDateTime(DateTime? dt) {
-    String timestamp = dt!.toLocal().toString();
+    String timestamp = dt!.toString();
     return timestamp;
   }
 
@@ -78,7 +78,7 @@ class DateTimeUtilsHelper {
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
-  /// Converts a local DateTime (assumed in tz.local) to UTC
+  /// Converts a  DateTime with local values (assumed in tz.local) to UTC
   static DateTime toUtcUsingLocal(DateTime dateTime) {
     // Wrap the DateTime in tz.TZDateTime using tz.local
     //from tz of dateTime to utc
@@ -88,7 +88,7 @@ class DateTimeUtilsHelper {
     return localTzDateTime.toUtc();
   }
 
-  /// Converts a UTC DateTime (or any DateTime) to tz.local time
+  /// Converts  DateTime with UTC values (or any DateTime) to tz.local time
   static DateTime toLocalUsingTz(DateTime dateTime) {
     print("local zone ${tz.local.name}");
     final utcTime = DateTime.utc(
@@ -108,5 +108,16 @@ class DateTimeUtilsHelper {
     // Return a normal Dart DateTime in local tz
     //print("local zone 2 ${tz.local.name}");
     return localTzDateTime;
+  }
+
+  static DateTime utcDateTimeFromUTCvalues(DateTime dateTime) {
+    return DateTime.utc(
+      dateTime.year,
+      dateTime.month,
+      dateTime.day,
+      dateTime.hour,
+      dateTime.minute,
+      dateTime.second,
+    );
   }
 }

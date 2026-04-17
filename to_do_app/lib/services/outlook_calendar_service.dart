@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:msal_auth/msal_auth.dart';
 import 'package:to_do_app/data/database.dart';
+import 'package:to_do_app/services/outlook_sign.dart';
 import 'package:to_do_app/utils/date_time_utils.dart';
 import 'dart:convert';
 
@@ -11,156 +12,7 @@ import 'package:uuid/uuid.dart';
 final _uuid = Uuid();
 
 class OutlookCalendarService {
-  static const _clientId = '6450d522-3a1c-4005-ae93-1fdc7f91aea2';
-  static const _redirectUri =
-      "msauth://com.example.to_do_app/Oust7aZi9rTbGkNnTUHkeg3V6WQ%3D";
-  //static const _scopes = ['User.Read', 'Calendars.ReadWrite'];
-
-  //static late PublicClientApplication _pca;
-  static String? _accessToken;
-
-  static final storage = FlutterSecureStorage();
-
-  static late SingleAccountPca _pca;
-
-  static Future<bool> restoreLastSession() async {
-    print("🔄 Attempting to restore last Outlook session...");
-
-    try {
-      // 1️⃣ Read saved access token
-      final savedToken = await storage.read(key: 'outlook_cal_accessToken');
-
-      if (savedToken == null) {
-        print("⚠️ No saved Outlook session found.");
-        return false;
-      }
-
-      print("🔐 Found saved token, verifying silently...");
-
-      _accessToken = savedToken;
-
-      // 2️⃣ Try silent token acquisition (refresh internal state)
-      final silentToken = await acquireTokenSilently();
-
-      if (silentToken != null) {
-        print("✅ Outlook session restored silently!");
-        _accessToken = silentToken;
-
-        // Update storage with refreshed token
-        await storage.write(
-          key: 'outlook_cal_accessToken',
-          value: _accessToken,
-        );
-
-        return true;
-      }
-
-      // 3️⃣ Silent failed → Token expired
-      print("⚠️ Saved token invalid/expired. Need full login.");
-      return false;
-    } catch (e) {
-      print("❌ Error restoring Outlook session: $e");
-      return false;
-    }
-  }
-
-  static Future<void> signOut() async {
-    try {
-      await _pca.signOut();
-      print("✅ Signed out successfully");
-      _accessToken = null;
-    } catch (e) {
-      print("❌ Sign-out failed: $e");
-    }
-  }
-
-  static Future<String?> acquireTokenSilently() async {
-    try {
-      await init();
-      final result = await _pca.acquireTokenSilent(
-        scopes: [
-          'https://graph.microsoft.com/User.Read',
-          'https://graph.microsoft.com/Calendars.ReadWrite',
-        ],
-      );
-
-      print("🔑 Silent token acquired: ${result.accessToken}");
-      return result.accessToken;
-    } catch (e) {
-      print("⚠️ Silent token failed: $e");
-      return null; // will trigger interactive login
-    }
-  }
-
-  static Future<void> init() async {
-    try {
-      _pca = await SingleAccountPca.create(
-        clientId: _clientId,
-        androidConfig: AndroidConfig(
-          configFilePath: 'assets/msal_config.json',
-          redirectUri: _redirectUri,
-        ),
-      );
-    } catch (e) {
-      print("❌init error: $e");
-    }
-  }
-
-  static Future<String?> signIn() async {
-    try {
-      //await _pca.signOut();
-      final result = await _pca.acquireToken(
-        scopes: [
-          'https://graph.microsoft.com/User.Read',
-          'https://graph.microsoft.com/Calendars.ReadWrite',
-        ],
-        prompt: Prompt.login,
-      );
-
-      print('Access Token: ${result.accessToken}');
-      return result.accessToken;
-    } catch (e) {
-      print("❌sign in error $e");
-      return null;
-    }
-  }
-
-  static Future<bool> initialize() async {
-    try {
-      await init(); // initialize PCA instance
-
-      print("🔍 Trying silent sign-in...");
-      final silentToken = await acquireTokenSilently();
-
-      if (silentToken != null) {
-        await storage.write(
-          key: 'outlook_cal_accessToken',
-          value: _accessToken,
-        );
-        print("✅ Silent sign-in success");
-        _accessToken = silentToken;
-        return true;
-      }
-
-      print("⚠️ Silent failed → doing interactive sign-in...");
-      _accessToken = await signIn();
-
-      if (_accessToken != null) {
-        print("✅ Interactive sign-in success");
-        await storage.write(
-          key: 'outlook_cal_accessToken',
-          value: _accessToken,
-        );
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      print("❌ initialize error: $e");
-      return false;
-    }
-  }
-
+  static String? _accessToken = OutlookAuthService.accessToken;
   // static Future<bool> initialize() async {
   //   // _pca = await PublicClientApplication.createPublicClientApplication(
   //   //   _clientId,
@@ -265,7 +117,7 @@ class OutlookCalendarService {
 
       return calendars.cast<Map<String, dynamic>>();
     } else {
-      print("❌ Error fetching calendars: ${response.body}");
+      print("❌ Error = fetching calendars: ${response.body}");
       return [];
     }
   }
@@ -288,7 +140,7 @@ class OutlookCalendarService {
       final data = jsonDecode(response.body);
       return List<Map<String, dynamic>>.from(data['value']);
     } else {
-      print("❌ Error fetching events: ${response.body}");
+      print("❌ Error - fetching events: ${response.body}");
       return [];
     }
   }
@@ -323,8 +175,9 @@ class OutlookCalendarService {
     List<dynamic> eventData,
   ) async {
     if (_accessToken == null) throw Exception('Not signed in');
+    print("add or update event to outlook called with data: $eventData");
 
-    final String? eventId = eventData[16];
+    final String? eventId = eventData[16][2];
 
     // If event ID is provided → check if it exists
     bool exists = false;
@@ -343,7 +196,8 @@ class OutlookCalendarService {
         final data = jsonDecode(checkResponse.body);
         print("Event data fetched for existence check: $data");
         // Verify that the event actually belongs to your target calendar
-        if (data['id'] == eventId) {
+        if (data['id'] == eventId /* && data['calendarId'] == calendarId*/ ) {
+          print("Event exists in the correct calendar");
           exists = true;
         }
       }
@@ -392,8 +246,9 @@ class OutlookCalendarService {
       );
 
       if (response.statusCode == 200) {
-        print("✅ Event updated successfully: $eventId");
-        eventData[16] = jsonDecode(response.body)['id'];
+        print("outlook==============>✅ Event updated successfully: $eventId");
+        eventData[16][2] = jsonDecode(response.body)['id'];
+        print("Updated event ID: ${eventData[16][2]}");
       } else {
         print(
           "❌ Failed to update event: ${response.statusCode} — ${response.body}",
@@ -417,8 +272,9 @@ class OutlookCalendarService {
       );
 
       if (response.statusCode == 201) {
-        print("✅ New event created successfully");
-        eventData[16] = jsonDecode(response.body)['id'];
+        print("outlook=========>✅ New event created successfully");
+        eventData[16][2] = jsonDecode(response.body)['id'];
+        print("New event ID: ${eventData[16][2]}");
       } else {
         print(
           "❌ Failed to create event: ${response.statusCode} — ${response.body}",
@@ -513,6 +369,8 @@ class OutlookCalendarService {
         eventId, // 15
         eventId, // 16 duplicate id for consistency
         "outlook", // 17 placeholder
+        "none", //18 completed at
+        [],
       ]);
       importedCount++;
     }
@@ -576,7 +434,7 @@ class OutlookCalendarService {
       final eventId = e['id'] ?? _uuid.v4();
 
       // Check if already in DB (to avoid duplicates)
-      // final alreadyExists = db.calTasks.any(
+      // final alreadyExists = db.outlookCalTasks.any(
       //   (t) =>
       //       t.length > 15 &&
       //       ((t[15] == eventId && t[14] == calendarId) || t[16] == eventId),
@@ -590,23 +448,23 @@ class OutlookCalendarService {
 
       if (existingIndex != -1) {
         // ✏️ Update existing record
-        db.calTasks[existingIndex][0] = e['subject'] ?? 'Untitled Event';
-        db.calTasks[existingIndex][2] = e['bodyPreview'] ?? '';
-        db.calTasks[existingIndex][3] = dueDate;
-        db.calTasks[existingIndex][4] = dueTime;
-        db.calTasks[existingIndex][5] = 'None';
-        db.calTasks[existingIndex][6] = 'Low';
-        db.calTasks[existingIndex][7] = 'none';
-        db.calTasks[existingIndex][8] = 10;
-        db.calTasks[existingIndex][9] = 'none';
-        db.calTasks[existingIndex][10] = false;
-        db.calTasks[existingIndex][13] = [];
+        db.outlookCalTasks[existingIndex][0] = e['subject'] ?? 'Untitled Event';
+        db.outlookCalTasks[existingIndex][2] = e['bodyPreview'] ?? '';
+        db.outlookCalTasks[existingIndex][3] = dueDate;
+        db.outlookCalTasks[existingIndex][4] = dueTime;
+        db.outlookCalTasks[existingIndex][5] = 'None';
+        db.outlookCalTasks[existingIndex][6] = 'Low';
+        db.outlookCalTasks[existingIndex][7] = 'none';
+        db.outlookCalTasks[existingIndex][8] = 10;
+        db.outlookCalTasks[existingIndex][9] = 'none';
+        db.outlookCalTasks[existingIndex][10] = false;
+        db.outlookCalTasks[existingIndex][13] = [];
         updatedCount++;
         continue;
       }
 
       // ➕ Add as read-only event (marked so user knows it’s not editable)
-      db.calTasks.add([
+      db.outlookCalTasks.add([
         e['subject'] ?? 'Untitled Event', // 0: taskName
         false, // 1: isCompleted
         e['bodyPreview'] ?? '', // 2: note
@@ -624,7 +482,8 @@ class OutlookCalendarService {
         calendarId, // 14
         eventId, // 15: Outlook event ID
         eventId, // 16: duplicate for consistency
-        //true, // 17: mark as read-only
+        true, // 17: mark as read-only
+        "none", //18 completed at
       ]);
 
       importedCount++;
@@ -654,13 +513,13 @@ class OutlookCalendarService {
         print('❌ Failed to sync to ${calendarID} task :"${task[0]}".');
       }
     }
-    print("📅 $count tasks added to outlook calendar");
+    print("📅 $count tasks added/updated to outlook calendar");
   }
 
   static Future<void> syncTasksFromCalendar(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["outlook"];
-    db.calTasks.removeWhere((t) => t[14] == calID);
+    db.outlookCalTasks.removeWhere((t) => t[14] == calID);
     //List<dynamic> events = await getEvents(calID);
     try {
       await importViewOnlyEventsToDB(calID, db);

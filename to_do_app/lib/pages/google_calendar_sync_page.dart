@@ -258,7 +258,7 @@ class _LocalCalendarSyncPageState extends State<GoogleCalendarSyncPage> {
                         //     );
                         // if (toDoCalendar == null) return;
                         //widget.db.viewOnlyCalendars["google"] = selectedImportCalendars;
-                        widget.db.calTasks = [];
+                        //widget.db.calTasks = [];
 
                         for (var cal in selectedSyncCalendars) {
                           // Mark calendar as synced

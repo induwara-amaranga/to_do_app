@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 //import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:to_do_app/data/database.dart';
+import 'package:to_do_app/pages/calendar_page.dart';
 //import 'package:timezone/data/latest.dart' as tz;
 //import 'package:timezone/timezone.dart' as tz;
 
@@ -12,11 +14,16 @@ import 'package:to_do_app/pages/filtered_tasks_page.dart';
 import 'package:to_do_app/pages/calender_sync_page.dart';
 import 'package:to_do_app/pages/manage_categories_page.dart';
 import 'package:to_do_app/pages/saved_timetables_page.dart';
+import 'package:to_do_app/pages/statistics_page.dart';
 import 'package:to_do_app/pages/task_page.dart';
 import 'package:to_do_app/providers/calendar_sync_provider.dart';
 import 'package:to_do_app/providers/file_search_provider.dart';
 import 'package:to_do_app/providers/file_sort_provider.dart';
 import 'package:to_do_app/providers/view_provider.dart';
+import 'package:to_do_app/services/google_drive_service.dart'
+    show GoogleDriveService;
+import 'package:to_do_app/services/google_sign.dart';
+import 'package:to_do_app/services/outlook_sign.dart';
 import 'package:to_do_app/themes/theme_provider.dart';
 import 'package:to_do_app/providers/grouping_provider.dart';
 import 'package:to_do_app/providers/sorting_provider.dart';
@@ -90,13 +97,15 @@ void main() async {
     db.loadData();
   }
   // WidgetsFlutterBinding.ensureInitialized();
-
+  await GoogleAuthService.initApp();
+  await OutlookAuthService.initialize();
   // TEST NOTIFICATION
   try {
-    await NotificationService.showNotification(
-      title: "Test Notification",
-      body: "This is a test.",
-    );
+    await NotificationService.init();
+    // await NotificationService.showNotification(
+    //   title: "Test Notification",
+    //   body: "This is a test.",
+    // );
   } catch (e) {
     print("----------Notification error: $e");
   }
@@ -138,7 +147,9 @@ class MyApp extends StatelessWidget {
                 TaskPage(updateMissedTasks: true, db: db, filePath: path),
         '/savedTimetables': (context) => const SavedTimetablesPage(),
         '/manageCategories': (context) => const ManageCategoriesPage(),
-        '/calendarSync': (context) => CalenderSyncPage(db: ToDoDataBase()),
+        '/calendarSync': (context) => CalenderSyncPage(db: db),
+        '/statistics': (context) => StatisticsPage(db: db),
+        '/calendar': (context) => CalendarPage(db: db),
         '/filteredTasks':
             (context) => Filteredtaskspage(
               deleteFunction: null,

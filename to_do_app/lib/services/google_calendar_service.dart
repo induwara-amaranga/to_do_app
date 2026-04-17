@@ -3,10 +3,11 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
-import 'package:googleapis_auth/googleapis_auth.dart';
+
 import 'package:http/http.dart' as http;
 //import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:to_do_app/data/database.dart';
+import 'package:to_do_app/services/google_sign.dart';
 import 'package:uuid/uuid.dart';
 import 'package:to_do_app/utils/date_time_utils.dart';
 
@@ -14,7 +15,7 @@ final _uuid = Uuid();
 
 class GoogleCalendarService {
   //static const _scopes = [gcal.CalendarApi.calendarScope];
-  static gcal.CalendarApi? _calendarApi;
+  static final gcal.CalendarApi? _calendarApi = GoogleAuthService.calendarApi;
   //static AuthClient? _client;
   static Map<String, String>? headers;
   static GoogleSignInAccount? _account;
@@ -95,122 +96,122 @@ class GoogleCalendarService {
   //   return gcal.CalendarApi(authClient);
   // }
 
-  static Future<bool> restoreLastSession() async {
-    print("🔄 Trying to restore previous Google session...");
+  // static Future<bool> restoreLastSession() async {
+  //   print("🔄 Trying to restore previous Google session...");
 
-    String? auth = await storage.read(key: 'google_cal_headers');
+  //   String? auth = await storage.read(key: 'google_cal_headers');
 
-    if (auth == null) {
-      print("❌ No stored token. User must sign in once.");
-      return false;
-    }
-    Map<String, dynamic> header = jsonDecode(auth);
+  //   if (auth == null) {
+  //     print("❌ No stored token. User must sign in once.");
+  //     return false;
+  //   }
+  //   Map<String, dynamic> header = jsonDecode(auth);
 
-    //final headers = {'Authorization': auth, 'X-Goog-AuthUser': '0'};
+  //   //final headers = {'Authorization': auth, 'X-Goog-AuthUser': '0'};
 
-    try {
-      _calendarApi = await getCalendarApi(header.cast<String, String>());
+  //   try {
+  //     _calendarApi = await getCalendarApi(header.cast<String, String>());
 
-      //_driveApi = drive.DriveApi(client);
+  //     //_driveApi = drive.DriveApi(client);
 
-      // test token
-      //await _driveApi!.files.list(pageSize: 1);
+  //     // test token
+  //     //await _driveApi!.files.list(pageSize: 1);
 
-      print("✅ Restored calendar session without sign-in!");
-      return true;
-    } catch (e) {
-      print("❌ Saved token expired: $e");
-      return false;
-    }
-  }
-
-  static Future<Map<String, dynamic>?> initializeSignIn() async {
-    print("initializing google sign in...");
-
-    // 1️⃣ Initialize GoogleSignIn
-    await GoogleSignIn.instance.initialize(
-      clientId: androidClientId,
-      serverClientId: webClientId,
-    );
-
-    GoogleSignInAccount? account;
-
-    // 2️⃣ Attempt SILENT sign-in first
-    print("Trying silent sign-in...");
-    account = await GoogleSignIn.instance.attemptLightweightAuthentication();
-
-    if (account != null) {
-      print("✅ Silent sign-in success: ${account.email}");
-    } else {
-      print("❌ Silent sign-in failed, asking user to sign in...");
-      // 3️⃣ Fallback to UI sign-in
-      account = await GoogleSignIn.instance.authenticate(
-        scopeHint: ['https://www.googleapis.com/auth/calendar'],
-      );
-    }
-
-    // 4️⃣ Now request OAuth headers (tokens)
-    print("Requesting OAuth headers...");
-    var headers = await account.authorizationClient.authorizationHeaders(
-      ['https://www.googleapis.com/auth/calendar'],
-      promptIfNecessary: false, // silent permission request
-    );
-
-    // 5️⃣ If tokens are null, ask for permission with popup
-    if (headers == null) {
-      print("Silent header generation failed — requesting user consent...");
-      headers = await account.authorizationClient.authorizationHeaders([
-        'https://www.googleapis.com/auth/calendar',
-      ], promptIfNecessary: true);
-    }
-
-    // 6️⃣ If STILL no headers → fail
-    if (headers == null) {
-      print("❌ Failed to obtain OAuth headers");
-      return null;
-    }
-    await storage.write(key: 'google_cal_headers', value: jsonEncode(headers));
-
-    print('🔑 Access token: ${headers['Authorization']}');
-
-    // 7️⃣ Build Calendar API
-    final gcal.CalendarApi calendarApi = await getCalendarApi(headers);
-    print('✅ Google Calendar API initialized');
-
-    _calendarApi = calendarApi;
-    _account = account;
-
-    return {"api": calendarApi, "userName": account.displayName};
-  }
-
-  // /// Use this for signed-in user authentication (via Google Sign-In)
-  // static Future<void> fromAccessCredentials(
-  //   AccessCredentials credentials,
-  // ) async {
-  //   final client = authenticatedClient(http.Client(), credentials);
-  //   await initialize(client);
+  //     print("✅ Restored calendar session without sign-in!");
+  //     return true;
+  //   } catch (e) {
+  //     print("❌ Saved token expired: $e");
+  //     return false;
+  //   }
   // }
 
-  /// Get user's Google calendars
+  // static Future<Map<String, dynamic>?> initializeSignIn() async {
+  //   print("initializing google sign in...");
 
-  static Future<gcal.CalendarApi> getCalendarApi(
-    Map<String, String> headers,
-  ) async {
-    final authClient = authenticatedClient(
-      http.Client(),
-      AccessCredentials(
-        AccessToken(
-          'Bearer',
-          headers['Authorization']!.replaceFirst('Bearer ', ''),
-          DateTime.now().toUtc().add(const Duration(hours: 1)),
-        ),
-        null,
-        [gcal.CalendarApi.calendarScope],
-      ),
-    );
+  //   // 1️⃣ Initialize GoogleSignIn
+  //   await GoogleSignIn.instance.initialize(
+  //     clientId: androidClientId,
+  //     serverClientId: webClientId,
+  //   );
 
-    return gcal.CalendarApi(authClient);
-  }
+  //   GoogleSignInAccount? account;
+
+  //   // 2️⃣ Attempt SILENT sign-in first
+  //   print("Trying silent sign-in...");
+  //   account = await GoogleSignIn.instance.attemptLightweightAuthentication();
+
+  //   if (account != null) {
+  //     print("✅ Silent sign-in success: ${account.email}");
+  //   } else {
+  //     print("❌ Silent sign-in failed, asking user to sign in...");
+  //     // 3️⃣ Fallback to UI sign-in
+  //     account = await GoogleSignIn.instance.authenticate(
+  //       scopeHint: ['https://www.googleapis.com/auth/calendar'],
+  //     );
+  //   }
+
+  //   // 4️⃣ Now request OAuth headers (tokens)
+  //   print("Requesting OAuth headers...");
+  //   var headers = await account.authorizationClient.authorizationHeaders(
+  //     ['https://www.googleapis.com/auth/calendar'],
+  //     promptIfNecessary: false, // silent permission request
+  //   );
+
+  //   // 5️⃣ If tokens are null, ask for permission with popup
+  //   if (headers == null) {
+  //     print("Silent header generation failed — requesting user consent...");
+  //     headers = await account.authorizationClient.authorizationHeaders([
+  //       'https://www.googleapis.com/auth/calendar',
+  //     ], promptIfNecessary: true);
+  //   }
+
+  //   // 6️⃣ If STILL no headers → fail
+  //   if (headers == null) {
+  //     print("❌ Failed to obtain OAuth headers");
+  //     return null;
+  //   }
+  //   await storage.write(key: 'google_cal_headers', value: jsonEncode(headers));
+
+  //   print('🔑 Access token: ${headers['Authorization']}');
+
+  //   // 7️⃣ Build Calendar API
+  //   final gcal.CalendarApi calendarApi = await getCalendarApi(headers);
+  //   print('✅ Google Calendar API initialized');
+
+  //   _calendarApi = calendarApi;
+  //   _account = account;
+
+  //   return {"api": calendarApi, "userName": account.displayName};
+  // }
+
+  // // /// Use this for signed-in user authentication (via Google Sign-In)
+  // // static Future<void> fromAccessCredentials(
+  // //   AccessCredentials credentials,
+  // // ) async {
+  // //   final client = authenticatedClient(http.Client(), credentials);
+  // //   await initialize(client);
+  // // }
+
+  // /// Get user's Google calendars
+
+  // static Future<gcal.CalendarApi> getCalendarApi(
+  //   Map<String, String> headers,
+  // ) async {
+  //   final authClient = authenticatedClient(
+  //     http.Client(),
+  //     AccessCredentials(
+  //       AccessToken(
+  //         'Bearer',
+  //         headers['Authorization']!.replaceFirst('Bearer ', ''),
+  //         DateTime.now().toUtc().add(const Duration(hours: 1)),
+  //       ),
+  //       null,
+  //       [gcal.CalendarApi.calendarScope],
+  //     ),
+  //   );
+
+  //   return gcal.CalendarApi(authClient);
+  // }
 
   /// Get events for a given calendar
   static Future<List<gcal.Event>> getEvents(String calendarId) async {
@@ -245,9 +246,9 @@ class GoogleCalendarService {
       final end = start.add(const Duration(minutes: 30));
       // final exists = events.cast<Event?>().firstWhere((e) {
       //   print(
-      //     "${e?.eventId} and -> ${task[16]}  ${e != null && e.eventId == task[16]}",
+      //     "${e?.eventId} and -> ${task[16][1]}  ${e != null && e.eventId == task[16][1]}",
       //   );
-      //   return e != null && e.eventId == task[16];
+      //   return e != null && e.eventId == task[16][1];
       // }, orElse: () => null);
 
       // if (exists != null) {
@@ -259,8 +260,10 @@ class GoogleCalendarService {
       final events = await getEvents(calendarId);
 
       final exists = events.cast<gcal.Event?>().firstWhere((e) {
-        print("${e?.id} and -> ${task[16]}  ${e != null && e.id == task[16]}");
-        return e != null && e.id == task[16];
+        print(
+          "${e?.id} and -> ${task[16][1]}  ${e != null && e.id == task[16][1]}",
+        );
+        return e != null && e.id == task[16][1];
       }, orElse: () => null);
 
       if (exists != null) {
@@ -270,7 +273,7 @@ class GoogleCalendarService {
           description: task[2] ?? '',
           start: gcal.EventDateTime(dateTime: start.toUtc(), timeZone: 'UTC'),
           end: gcal.EventDateTime(dateTime: end.toUtc(), timeZone: 'UTC'),
-          //id: task.length > 16 ? task[16] : null,
+          id: task.length > 16 ? task[16][1] : null,
         );
         final result = await _calendarApi!.events.patch(
           event,
@@ -290,16 +293,16 @@ class GoogleCalendarService {
         description: task[2] ?? '',
         start: gcal.EventDateTime(dateTime: start.toUtc(), timeZone: 'UTC'),
         end: gcal.EventDateTime(dateTime: end.toUtc(), timeZone: 'UTC'),
-        //id: task.length > 16 ? task[16] : null,
+        //id: task.length > 16 ? task[16][1] : null,
       );
 
-      // if (task.length > 16 && task[16] != null) {
-      //   event.id = task[16];
+      // if (task.length > 16 && task[16][1] != null) {
+      //   event.id = task[16][1];
       // }
 
       final created = await _calendarApi!.events.insert(event, calendarId);
-      print('✅ inserted event: ${created.summary}');
-      task[16] = created.id;
+      print('google==========>✅ inserted event: ${created.summary}');
+      task[16][1] = created.id;
     } catch (e, st) {
       print('❌ Error adding/updating Google event: $e');
       print(st);
@@ -376,6 +379,8 @@ class GoogleCalendarService {
         e.id, //15
         e.id, //16
         _account?.displayName ?? 'google',
+        "none", //18 completed at
+        [],
       ]);
 
       importedCount++;
@@ -441,11 +446,11 @@ class GoogleCalendarService {
       };
 
       // Check if event already exists in DB
-      final existingIndex = db.calTasks.indexWhere(
+      final existingIndex = db.googleCalTasks.indexWhere(
         (task) =>
             task.length > 15 &&
             ((task[14] == calendarId && task[15] == event.id) ||
-                task[16] == event.id),
+                task[16][1] == event.id),
       );
 
       final combined = DateTimeUtilsHelper.combineDateAndTime(
@@ -456,17 +461,21 @@ class GoogleCalendarService {
 
       if (existingIndex != -1) {
         // Update existing task
-        db.calTasks[existingIndex][0] = taskDetails['taskName'];
-        db.calTasks[existingIndex][2] = taskDetails['taskNote'];
-        db.calTasks[existingIndex][3] = DateTimeUtilsHelper.formatDate(utcTime);
-        db.calTasks[existingIndex][4] = DateTimeUtilsHelper.formatTime(utcTime);
-        db.calTasks[existingIndex][5] = taskDetails['taskCategory'];
-        db.calTasks[existingIndex][6] = taskDetails['taskPriority'];
-        db.calTasks[existingIndex][7] = taskDetails['repeatType'];
-        db.calTasks[existingIndex][8] = taskDetails['remainderAmount'];
-        db.calTasks[existingIndex][9] = taskDetails['remainderType'];
-        db.calTasks[existingIndex][10] = taskDetails['isStarred'];
-        db.calTasks[existingIndex][13] = taskDetails['subTasks'];
+        db.googleCalTasks[existingIndex][0] = taskDetails['taskName'];
+        db.googleCalTasks[existingIndex][2] = taskDetails['taskNote'];
+        db.googleCalTasks[existingIndex][3] = DateTimeUtilsHelper.formatDate(
+          utcTime,
+        );
+        db.googleCalTasks[existingIndex][4] = DateTimeUtilsHelper.formatTime(
+          utcTime,
+        );
+        db.googleCalTasks[existingIndex][5] = taskDetails['taskCategory'];
+        db.googleCalTasks[existingIndex][6] = taskDetails['taskPriority'];
+        db.googleCalTasks[existingIndex][7] = taskDetails['repeatType'];
+        db.googleCalTasks[existingIndex][8] = taskDetails['remainderAmount'];
+        db.googleCalTasks[existingIndex][9] = taskDetails['remainderType'];
+        db.googleCalTasks[existingIndex][10] = taskDetails['isStarred'];
+        db.googleCalTasks[existingIndex][13] = taskDetails['subTasks'];
         updatedCount++;
         print('✏️ Updated existing task: ${event.summary}');
         continue;
@@ -474,7 +483,7 @@ class GoogleCalendarService {
       print("existing = $existingIndex");
 
       // Add new task
-      db.calTasks.add([
+      db.googleCalTasks.add([
         taskDetails['taskName'],
         false,
         taskDetails['taskNote'],
@@ -492,7 +501,8 @@ class GoogleCalendarService {
         taskDetails['calendarId'],
         taskDetails['eventId'],
         taskDetails['eventId'],
-        //false,
+        false,
+        "none", //18 completed at
       ]);
 
       importedCount++;
@@ -602,13 +612,13 @@ class GoogleCalendarService {
         print('❌ Failed to sync ${calendarID} "${task[0]}".');
       }
     }
-    print("📅 $count tasks added to google calendar");
+    print("📅 $count tasks added/updated to google calendar");
   }
 
   static Future<void> syncTasksFromCalendars(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["google"];
-    db.calTasks.removeWhere((t) => t[14] == calID);
+    db.googleCalTasks.removeWhere((t) => t[14] == calID);
     List<dynamic> events = await getEvents(calID);
     try {
       await importViewOnlyEventsToDB(events, db);

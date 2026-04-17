@@ -10,11 +10,12 @@ import 'package:to_do_app/utils/date_time_utils.dart';
 
 class CreateTaskSheet extends StatefulWidget {
   final String buttonText;
+  final bool isStarred;
   final String taskName;
   final String taskNote;
-  final TextEditingController taskNameController;
-  final TextEditingController taskNoteController;
-  final TextEditingController remainderAmountController;
+  // final TextEditingController taskNameController;
+  // final TextEditingController taskNoteController;
+  // final TextEditingController remainderAmountController;
   final ValueChanged<Map<String, dynamic>>? onSave;
   final List<String> repeatTypes;
   final List<String> priorityTypes;
@@ -34,6 +35,7 @@ class CreateTaskSheet extends StatefulWidget {
 
   const CreateTaskSheet({
     super.key,
+    required this.isStarred,
     this.buttonText = "Create Task",
     this.initialDueDate,
     this.initialDueTime,
@@ -45,9 +47,9 @@ class CreateTaskSheet extends StatefulWidget {
     required this.taskName,
     required this.taskNote,
     required this.initialSubtasks,
-    required this.taskNameController,
-    required this.taskNoteController,
-    required this.remainderAmountController,
+    // required this.taskNameController,
+    // required this.taskNoteController,
+    // required this.remainderAmountController,
     required this.onSave,
     required this.repeatTypes,
     required this.priorityTypes,
@@ -105,6 +107,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     final localTime = DateTimeUtilsHelper.toLocalUsingTz(combinedTime);
     _selectedDueDate = localTime;
     _selectedDueTime = localTime;
+    _isStarred = widget.isStarred;
     print("time $_selectedDueDate  $_selectedDueTime");
   }
 
@@ -209,14 +212,14 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                                         tasks[0] as Map<String, dynamic>? ?? {};
 
                                     // Task name & note
-                                    widget.taskNameController.text =
+                                    taskNameController.text =
                                         (first['task_name'] ??
                                                 first['taskName'])
                                             ?.toString() ??
-                                        widget.taskNameController.text;
-                                    widget.taskNoteController.text =
+                                        taskNameController.text;
+                                    taskNoteController.text =
                                         (first['task_note'])?.toString() ??
-                                        widget.taskNoteController.text;
+                                        taskNoteController.text;
 
                                     // dueDate (accept String or DateTime)
                                     final dueDateRaw = first['due_date'];
@@ -268,7 +271,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                                     // remainder amount & type
                                     final remAmount = first['reminder_amount'];
                                     if (remAmount != null) {
-                                      widget.remainderAmountController.text =
+                                      reminderAmountController.text =
                                           remAmount.toString();
                                     }
                                     _selectedRemainderType =
@@ -731,7 +734,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
 
                           final taskData = {
                             'createdAt': DateTime.now().toUtc().toString(),
-                            'isStarred': _isStarred,
+                            'isStarred': _isStarred.toString(),
                             'taskName': taskNameController.text,
                             'taskNote': taskNoteController.text,
                             'dueDate': DateTimeUtilsHelper.formatDate(utcTime),

@@ -150,7 +150,15 @@ class _CalendarTileState extends State<LocalCalendarTile> {
                       // Fetch calendars
                       final calendars =
                           await LocalCalendarService.getCalendars();
+                      final toDoCal =
+                          await LocalCalendarService.createNewCalendar(
+                            calendars,
+                          );
                       if (calendars.isNotEmpty) {
+                        // widget.db.viewOnlyCalendars["local"]!.addAll(
+                        //   calendars.map((c) => c.id!),
+                        // );
+                        widget.db.syncToCalendars["local"] = toDoCal.id!;
                         // final events = await CalendarService.getEvents(
                         //   calendars[5].id!,
                         // );

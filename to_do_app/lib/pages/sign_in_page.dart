@@ -7,6 +7,7 @@ import 'package:hive/hive.dart';
 //import 'package:path_provider/path_provider.dart';
 import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/services/google_drive_service.dart';
+import 'package:to_do_app/services/google_sign.dart';
 
 class SignInPage extends StatefulWidget {
   final String? filePath;
@@ -34,15 +35,8 @@ class _MyWidgetState extends State<SignInPage> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
-        GoogleDriveService.restoreLastSession().then((restored) {
-          if (restored) {
-            print("Restored previous session successfully.");
-            isSignedIn = true;
-            widget.db.loadData();
-          } else {
-            print("No previous session to restore.");
-          }
-        });
+        bool isReady = await GoogleAuthService.ensureApisReady();
+        print("Google APIs ready: $isReady");
       } catch (e) {
         print("Error restoring last session $e");
       }
@@ -56,10 +50,10 @@ class _MyWidgetState extends State<SignInPage> {
       appBar: AppBar(
         actions: [
           PopupMenuButton<String>(
-            onSelected: (value) {
+            onSelected: (value)async {
               print("Selected: $value");
               if (value == 'signOut') {
-                GoogleDriveService.signOut();
+                await GoogleAuthService.signOut();
                 widget.db.accountDetails["userName"] = "none";
                 widget.db.accountDetails["profilePicture"] = "none";
                 widget.db.updateDataBase();
@@ -96,7 +90,7 @@ class _MyWidgetState extends State<SignInPage> {
               radius: 50,
               child: ClipOval(
                 child: Image.network(
-                  widget.db.accountDetails["profilePicture"] ?? '',
+                  GoogleAuthService.currentUser?.photoUrl ?? '',
                   fit: BoxFit.cover,
                   width: 60,
                   height: 60,
@@ -108,9 +102,8 @@ class _MyWidgetState extends State<SignInPage> {
             ),
             //SizedBox(height: 10),
             Text(
-              widget.db.accountDetails["userName"] != "none"
-                  ? widget.db.accountDetails["userName"]
-                  : 'Not Signed In!',
+              GoogleAuthService.currentUser?.displayName ?? 'Not Signed In!',
+
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 40),
@@ -121,19 +114,22 @@ class _MyWidgetState extends State<SignInPage> {
                 onTap: () async {
                   try {
                     GoogleSignInAccount? user =
-                        await GoogleDriveService.initializeSignIn();
+                        GoogleAuthService.currentUser ??
+                        await GoogleAuthService.signInSilently() ??
+                        await GoogleAuthService.signIn();
                     if (user != null) {
                       // Navigate to the next page or update the UI accordingly
                       print("Signed in as ${user.displayName}");
-                      widget.db.accountDetails["userName"] =
-                          user.displayName ?? "none";
-                      widget.db.accountDetails["profilePicture"] =
-                          user.photoUrl ?? "none";
-                      widget.db.updateDataBase();
+                      // widget.db.accountDetails["userName"] =
+                      //     user.displayName ?? "none";
+                      // widget.db.accountDetails["profilePicture"] =
+                      //     user.photoUrl ?? "none";
+                      // widget.db.updateDataBase();
 
                       setState(() {
                         isSignedIn = true;
                       });
+                      //
                       widget.onSignIn();
                     } else {
                       print("Sign-in failed");

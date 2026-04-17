@@ -4,6 +4,7 @@ import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/pages/google_calendar_sync_page.dart';
 import 'package:to_do_app/pages/local_calendar_sync_page.dart';
 import 'package:to_do_app/services/google_calendar_service.dart';
+import 'package:to_do_app/services/google_sign.dart';
 import 'package:to_do_app/services/local_calendar_service.dart';
 
 class GoogleCalendarTile extends StatefulWidget {
@@ -70,10 +71,10 @@ class _CalendarTileState extends State<GoogleCalendarTile> {
 
                           try {
                             // Fetch calendars
-                            Map<String, dynamic>? calendarInit =
-                                await GoogleCalendarService.initializeSignIn();
+                            // Map<String, dynamic>? calendarInit =
+                            //     await GoogleCalendarService.initializeSignIn();
                             gcal.CalendarApi? calendarAPI =
-                                calendarInit!["api"];
+                                GoogleAuthService.calendarApi;
                             print("fetching calendar list......");
                             gcal.CalendarList calendars = gcal.CalendarList();
                             if (calendarAPI != null) {
@@ -95,7 +96,11 @@ class _CalendarTileState extends State<GoogleCalendarTile> {
                                       (_) => GoogleCalendarSyncPage(
                                         calendars: calendars.items ?? [],
                                         db: db,
-                                        accountName: calendarInit["userName"],
+                                        accountName:
+                                            GoogleAuthService
+                                                .currentUser
+                                                ?.email ??
+                                            "Unknown",
                                         calendarAPI: calendarAPI!,
                                       ),
                                 ),
@@ -177,9 +182,10 @@ class _CalendarTileState extends State<GoogleCalendarTile> {
                   if (value) {
                     try {
                       // Fetch calendars
-                      Map<String, dynamic>? calendarInit =
-                          await GoogleCalendarService.initializeSignIn();
-                      gcal.CalendarApi? calendarAPI = calendarInit!["api"];
+                      // Map<String, dynamic>? calendarInit =
+                      //     await GoogleCalendarService.initializeSignIn();
+                      gcal.CalendarApi? calendarAPI =
+                          GoogleAuthService.calendarApi;
                       gcal.CalendarList calendars = gcal.CalendarList();
                       if (calendarAPI != null) {
                         calendars = await calendarAPI.calendarList.list();
@@ -201,7 +207,9 @@ class _CalendarTileState extends State<GoogleCalendarTile> {
                                   calendarAPI: calendarAPI!,
                                   calendars: calendars.items ?? [],
                                   db: db,
-                                  accountName: calendarInit["userName"],
+                                  accountName:
+                                      GoogleAuthService.currentUser?.email ??
+                                      "Unknown",
                                 ),
                           ),
                         );

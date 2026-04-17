@@ -7,7 +7,10 @@ import 'package:uuid/uuid.dart';
 class RepeatTask {
   static var uuid = Uuid();
   // Create all pending repeated tasks if their due date(s) have passed
-  static void createPendingRepeatTasks(ToDoDataBase db, BuildContext context) {
+  static void createPendingRepeatTasks(
+    ToDoDataBase db,
+    BuildContext context,
+  ) async {
     final today = DateTime.now().toUtc();
 
     // Make a copy so iteration isn’t affected by .add()
@@ -27,7 +30,7 @@ class RepeatTask {
 
       while (dueDate!.isBefore(DateTime(today.year, today.month, today.day)) &&
           count < maxRepeats) {
-        dueDate = _createNextRepeatTask(context, db, task, dueDate);
+        dueDate = await _createNextRepeatTask(context, db, task, dueDate);
         count++;
       }
     }
@@ -37,12 +40,12 @@ class RepeatTask {
 
   // Private helper to create the next repeat task
   // Returns the next due date
-  static DateTime _createNextRepeatTask(
+  static Future<DateTime> _createNextRepeatTask(
     BuildContext context,
     ToDoDataBase db,
     List<dynamic> task,
     DateTime dueDate,
-  ) {
+  ) async {
     String repeatType = task[7];
     DateTime nextDate;
 
@@ -95,6 +98,8 @@ class RepeatTask {
       "", //15 event id
       "", //16 local cal event id
       "repeat",
+      "none",
+      [],
     ]);
     // print(
     //   "added ${[
@@ -128,14 +133,20 @@ class RepeatTask {
             task[8],
           );
           if (remainderDateTime.isAfter(DateTime.now().toUtc())) {
-            NotificationService.scheduleInitialRemainderForTask(id, context, {
-              'dueDate': DateTimeUtilsHelper.formatDate(nextDate),
-              'dueTime': task[4],
-              'taskName': task[0],
-              'taskPriority': task[6],
-              'remainderType': task[9],
-              'remainderAmount': task[8],
-            });
+            await NotificationService.scheduleInitialRemainderForTask(
+              id,
+              context,
+              {
+                'dueDate': DateTimeUtilsHelper.formatDate(nextDate),
+                'dueTime': task[4],
+                'taskName': task[0],
+                'taskPriority': task[6],
+                'remainderType': task[9],
+                'remainderAmount': task[8],
+              },
+              db,
+              db.toDoList.length - 1,
+            );
             // try {
             //   NotificationService.sheduledTimeNotification(
             //     priority: task[6],
@@ -167,11 +178,11 @@ class RepeatTask {
     return nextDate;
   }
 
-  static void createNextRepeatTask(
+  static Future<void> createNextRepeatTask(
     BuildContext context,
     int index,
     ToDoDataBase db,
-  ) {
+  ) async {
     var task = db.toDoList[index];
 
     // Parse the current due date
@@ -238,6 +249,8 @@ class RepeatTask {
       "", //15 event id
       "", //16 local cal event id
       "repeat",
+      "none",
+      [],
     ]);
 
     db.updateDataBase();
@@ -251,14 +264,20 @@ class RepeatTask {
           task[8],
         );
         if (remainderDateTime.isAfter(DateTime.now().toUtc())) {
-          NotificationService.scheduleInitialRemainderForTask(id, context, {
-            'dueDate': DateTimeUtilsHelper.formatDate(nextDate),
-            'dueTime': task[4],
-            'taskName': task[0],
-            'taskPriority': task[6],
-            'remainderType': task[9],
-            'remainderAmount': task[8],
-          });
+          await NotificationService.scheduleInitialRemainderForTask(
+            id,
+            context,
+            {
+              'dueDate': DateTimeUtilsHelper.formatDate(nextDate),
+              'dueTime': task[4],
+              'taskName': task[0],
+              'taskPriority': task[6],
+              'remainderType': task[9],
+              'remainderAmount': task[8],
+            },
+            db,
+            db.toDoList.length - 1,
+          );
         }
       }
     }

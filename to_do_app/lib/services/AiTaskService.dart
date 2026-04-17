@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 class AiTaskService {
   static const String _endpoint =
       'https://vzltupelovhgagglqpjf.supabase.co/functions/v1/super-endpoint';
+  //'https://vzltupelovhgagglqpjf.supabase.co/functions/v1/super-endpoint';
 
   /// Call AI generation API
   static Future<Map<String, dynamic>> generateTasks({
@@ -16,20 +17,23 @@ class AiTaskService {
       "timeframe": timeframe,
       "timeStamp": DateTime.now().toLocal().toString(),
     };
-
-    final response = await http.post(
-      Uri.parse(_endpoint),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(body),
-    );
-
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
-      return jsonResponse;
-    } else {
-      throw Exception(
-        'Failed to fetch tasks: ${response.statusCode} ${response.body}',
+    try {
+      final response = await http.post(
+        Uri.parse(_endpoint),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
       );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+        return jsonResponse;
+      } else {
+        throw Exception(
+          'Failed to fetch tasks: ${response.statusCode} ${response.body}',
+        );
+      }
+    } catch (e) {
+      throw Exception('Error during API call: $e');
     }
   }
 }

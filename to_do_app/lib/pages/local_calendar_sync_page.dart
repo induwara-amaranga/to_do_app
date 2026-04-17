@@ -237,7 +237,7 @@ class _LocalCalendarSyncPageState extends State<LocalCalendarSyncPage> {
                       //   widget.calendars,
                       // );
                       //widget.db.viewOnlyCalendars["local"] = selectedImportCalendars;
-                      widget.db.calTasks = [];
+                      //widget.db.localCalTasks = [];
 
                       for (var cal in selectedSyncCalendars) {
                         // Mark calendar as synced

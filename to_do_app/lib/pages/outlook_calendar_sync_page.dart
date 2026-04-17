@@ -7,6 +7,7 @@ import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/services/Outlook_calendar_service.dart';
 import 'package:to_do_app/services/local_calendar_service.dart';
 import 'package:to_do_app/providers/calendar_sync_provider.dart';
+import 'package:to_do_app/services/outlook_sign.dart';
 import 'package:uuid/uuid.dart';
 
 class OutlookCalendarSyncPage extends StatefulWidget {
@@ -103,7 +104,7 @@ class _LocalCalendarSyncPageState extends State<OutlookCalendarSyncPage> {
           IconButton(
             icon: Icon(Icons.more_vert),
             onPressed: () async {
-              await OutlookCalendarService.signOut();
+              await OutlookAuthService.signOut();
               if (mounted) Navigator.pop(context);
             },
           ),
@@ -264,7 +265,7 @@ class _LocalCalendarSyncPageState extends State<OutlookCalendarSyncPage> {
                         //     );
                         // if (toDoCalendar == null) return;
                         //widget.db.viewOnlyCalendars["Outlook"] = selectedImportCalendars;
-                        widget.db.calTasks = [];
+                        //widget.db.calTasks = [];
 
                         for (var cal in selectedSyncCalendars) {
                           // Mark calendar as synced

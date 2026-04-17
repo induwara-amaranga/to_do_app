@@ -155,6 +155,7 @@ class _ListViewTimeTableTileState extends State<ListViewTimeTableTile> {
                     break;
                   case 'share':
                     // Implement share functionality
+                    await FileStorageService.shareFile(file.path);
                     break;
                   case 'rename':
                     // Implement rename functionality

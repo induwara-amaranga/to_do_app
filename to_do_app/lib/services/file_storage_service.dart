@@ -6,6 +6,7 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:to_do_app/data/file_database_repository.dart';
+import 'package:share_plus/share_plus.dart';
 //import 'package:share_plus/share_plus.dart';
 
 FileRepository _fileRepository = FileRepository();
@@ -55,6 +56,16 @@ class FileStorageService {
       await _fileRepository.changeFilePath(filePath, newPath);
       return newFile;
     }
+  }
+
+  static Future<void> shareFile(String path) async {
+    final file = XFile(path);
+
+    final result = await SharePlus.instance.share(
+      ShareParams(files: [file], text: "Check this file!"),
+    );
+
+    print(result.status); // success / dismissed / unavailable
   }
 
   static void deleteFile(File file) async {

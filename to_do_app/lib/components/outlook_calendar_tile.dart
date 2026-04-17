@@ -5,6 +5,7 @@ import 'package:to_do_app/pages/Outlook_calendar_sync_page.dart';
 import 'package:to_do_app/pages/local_calendar_sync_page.dart';
 import 'package:to_do_app/services/Outlook_calendar_service.dart';
 import 'package:to_do_app/services/local_calendar_service.dart';
+import 'package:to_do_app/services/outlook_sign.dart';
 
 class OutlookCalendarTile extends StatefulWidget {
   final ToDoDataBase db;
@@ -23,17 +24,16 @@ class _CalendarTileState extends State<OutlookCalendarTile> {
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-
     db = widget.db;
+    // ✅ Calculate ONCE here, not in build()
+    isSyncTrue =
+        db.syncToCalendars["outlook"] != "none" ||
+        db.viewOnlyCalendars["outlook"]!.isNotEmpty;
   }
 
   @override
   Widget build(BuildContext context) {
-    isSyncTrue =
-        db.syncToCalendars["outlook"] != "none" ||
-        db.viewOnlyCalendars["outlook"]!.isNotEmpty;
     return Container(
       decoration: BoxDecoration(
         border: Border.all(),
@@ -72,8 +72,7 @@ class _CalendarTileState extends State<OutlookCalendarTile> {
                             // Fetch calendars
 
                             bool hasToken;
-                            hasToken =
-                                await OutlookCalendarService.initialize();
+                            hasToken = await OutlookAuthService.initialize();
                             List<Map<String, dynamic>> calendars = [];
 
                             print("fetching calendar list......");
@@ -151,8 +150,8 @@ class _CalendarTileState extends State<OutlookCalendarTile> {
                                 ),
                               );
                             }
-                          } catch (e) {
-                            print("Error fetching events: $e");
+                          } catch (e, st) {
+                            print("Error fetching events: $e \n $st");
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text("Error fetching events: $e"),
@@ -178,7 +177,7 @@ class _CalendarTileState extends State<OutlookCalendarTile> {
                     try {
                       // Fetch calendars
                       bool hasToken;
-                      hasToken = await OutlookCalendarService.initialize();
+                      hasToken = await OutlookAuthService.initialize();
                       List<Map<String, dynamic>> calendars = [];
                       if (hasToken) {
                         calendars =
@@ -213,8 +212,8 @@ class _CalendarTileState extends State<OutlookCalendarTile> {
                           ),
                         );
                       }
-                    } catch (e) {
-                      print("Error fetching events: $e");
+                    } catch (e, st) {
+                      print("Error fetching events: $e \n $st");
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text("Error fetching events: $e"),

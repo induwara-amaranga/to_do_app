@@ -4,7 +4,9 @@ import 'package:to_do_app/utils/date_time_utils.dart';
 //import 'package:flutter_native_timezone/flutter_timezone.dart';
 
 class ToDoDataBase {
-  List<List<dynamic>> calTasks = [];
+  List<List<dynamic>> localCalTasks = [];
+  List<List<dynamic>> googleCalTasks = [];
+  List<List<dynamic>> outlookCalTasks = [];
   List<List<dynamic>> toDoList = [];
   List<String> categories = [];
 
@@ -39,7 +41,9 @@ class ToDoDataBase {
 
   void createInitialData() {
     DateTime dueDateTime = DateTime.now().toUtc().add(Duration(minutes: 1));
-    calTasks = [];
+    localCalTasks = [];
+    googleCalTasks = [];
+    outlookCalTasks = [];
     toDoList = [
       // [
       //   "Take a break",
@@ -126,9 +130,20 @@ class ToDoDataBase {
     }
 
     // ✅ FIX: Load calendar tasks correctly
-    final storedCalTasks = _mybox.get("CAL_TASKS");
-    if (storedCalTasks is List) {
-      calTasks = storedCalTasks.map((item) => item as List<dynamic>).toList();
+    final storedLocalCalTasks = _mybox.get("LOCAL_CAL_TASKS");
+    if (storedLocalCalTasks is List) {
+      localCalTasks =
+          storedLocalCalTasks.map((item) => item as List<dynamic>).toList();
+    }
+    final storedGoogleCalTasks = _mybox.get("GOOGLE_CAL_TASKS");
+    if (storedGoogleCalTasks is List) {
+      googleCalTasks =
+          storedGoogleCalTasks.map((item) => item as List<dynamic>).toList();
+    }
+    final storedOutlookCalTasks = _mybox.get("OUTLOOK_CAL_TASKS");
+    if (storedOutlookCalTasks is List) {
+      outlookCalTasks =
+          storedOutlookCalTasks.map((item) => item as List<dynamic>).toList();
     }
     print("🗄️ Database loaded");
   }
@@ -145,7 +160,9 @@ class ToDoDataBase {
     _mybox.put("CATEGORIES", categories);
     _mybox.put("VIEW_ONLY_CALENDARS", hiveviewOnlyCalendars);
     _mybox.put("SYNC_TO_CALENDARS", syncToCalendars);
-    _mybox.put("CAL_TASKS", calTasks);
+    _mybox.put("LOCAL_CAL_TASKS", localCalTasks);
+    _mybox.put("GOOGLE_CAL_TASKS", googleCalTasks);
+    _mybox.put("OUTLOOK_CAL_TASKS", outlookCalTasks);
     _mybox.put("SETTINGS", settings);
     _mybox.put("ACCOUNT", accountDetails);
 
@@ -153,6 +170,8 @@ class ToDoDataBase {
     print("viewOnlyCalendars (in-memory Sets): $viewOnlyCalendars");
     print("viewOnlyCalendars (Hive Lists): $hiveviewOnlyCalendars");
     print(toDoList);
-    print("✅$calTasks");
+    print("✅local ===> $localCalTasks");
+    print("✅google===> $googleCalTasks");
+    print("✅outlook===> $outlookCalTasks");
   }
 }

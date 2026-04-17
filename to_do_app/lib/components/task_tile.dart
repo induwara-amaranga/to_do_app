@@ -248,10 +248,10 @@ class _TaskTileState extends State<TaskTile> {
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.onSurface,
                             fontSize: 18,
-                            // decoration:
-                            //     widget.taskCompleted
-                            //         ? TextDecoration.lineThrough
-                            //         : null,
+                            decoration:
+                                _completed
+                                    ? TextDecoration.lineThrough
+                                    : TextDecoration.none,
                           ),
                         ),
                       ),
@@ -295,16 +295,12 @@ class _TaskTileState extends State<TaskTile> {
                             context: context,
                             builder:
                                 (context) => CreateTaskSheet(
+                                  isStarred: widget.isStarred,
                                   taskName: widget.taskName,
                                   taskNote: widget.taskNote,
                                   initialSubtasks: widget.initialSubtasks ?? [],
                                   buttonText: "Save changes",
-                                  taskNameController: TextEditingController(
-                                    text: widget.taskName,
-                                  ),
-                                  taskNoteController: TextEditingController(
-                                    text: widget.taskNote,
-                                  ),
+
                                   initialCategory: widget.taskCategory,
                                   initialPriority: widget.taskPriority,
                                   initialRepeatType: widget.repeatType,
@@ -313,13 +309,7 @@ class _TaskTileState extends State<TaskTile> {
                                   initialRemainderType: widget.remainderType,
                                   initialDueDate: widget.dueDate,
                                   initialDueTime: widget.dueTime,
-                                  remainderAmountController:
-                                      TextEditingController(
-                                        text:
-                                            widget.remainderAmount
-                                                .toString()
-                                                .trim(),
-                                      ),
+
                                   onSave: (taskDetails) {
                                     if (widget.onEdit != null) {
                                       widget.onEdit!(widget.index, taskDetails);
@@ -442,12 +432,12 @@ class _TaskTileState extends State<TaskTile> {
         context: context,
         builder:
             (context) => CreateTaskSheet(
+              isStarred: widget.isStarred,
               taskName: widget.taskName,
               taskNote: widget.taskNote,
               initialSubtasks: widget.initialSubtasks ?? [],
               buttonText: "Save changes",
-              taskNameController: TextEditingController(text: widget.taskName),
-              taskNoteController: TextEditingController(text: widget.taskNote),
+
               initialCategory: widget.taskCategory,
               initialPriority: widget.taskPriority,
               initialRepeatType: widget.repeatType,
@@ -455,9 +445,7 @@ class _TaskTileState extends State<TaskTile> {
               initialRemainderType: widget.remainderType,
               initialDueDate: widget.dueDate,
               initialDueTime: widget.dueTime,
-              remainderAmountController: TextEditingController(
-                text: widget.remainderAmount.toString().trim(),
-              ),
+
               onSave: (taskDetails) {
                 if (widget.onEdit != null) {
                   widget.onEdit!(widget.index, taskDetails);

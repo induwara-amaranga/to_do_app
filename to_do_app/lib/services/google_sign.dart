@@ -1,0 +1,114 @@
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:googleapis/calendar/v3.dart' as gcal;
+import 'package:googleapis/drive/v3.dart' as drive;
+import 'package:http/http.dart' as http;
+
+class GoogleAuthService {
+  static final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'https://www.googleapis.com/auth/calendar',
+      'https://www.googleapis.com/auth/drive.file',
+    ],
+  );
+
+  static final _storage = FlutterSecureStorage();
+  static GoogleSignInAccount? currentUser;
+  static gcal.CalendarApi? calendarApi;
+  static drive.DriveApi? driveApi;
+
+  static Future<void> initApp() async {
+    try {
+      // App startup (AuthGate)
+      GoogleSignInAccount? user = await signInSilently();
+      if (user == null) user = await signIn();
+      currentUser = user;
+    } catch (e) {
+      print("Failed to initialize notifications: $e");
+    }
+  }
+
+  /// Call this at app startup — silently restores session if previously signed in
+  static Future<GoogleSignInAccount?> signInSilently() async {
+    try {
+      currentUser = await _googleSignIn.signInSilently();
+      if (currentUser != null) await _initApis();
+      return currentUser;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Full sign-in flow (only needed if silent sign-in fails)
+  static Future<GoogleSignInAccount?> signIn() async {
+    try {
+      currentUser = await _googleSignIn.signIn();
+      if (currentUser != null) await _initApis();
+      return currentUser;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Call before every API use — ensures token is fresh
+  static Future<void> _initApis() async {
+    final client = await _getAuthClient();
+    if (client == null) return;
+    calendarApi = gcal.CalendarApi(client);
+    driveApi = drive.DriveApi(client);
+  }
+
+  /// Builds a fresh authenticated HTTP client (auto-refreshes token)
+  static Future<_GoogleAuthClient?> _getAuthClient() async {
+    try {
+      final account = currentUser ?? _googleSignIn.currentUser;
+      if (account == null) return null;
+
+      final auth = await account.authentication; // auto-refreshes if expired
+      return _GoogleAuthClient({
+        'Authorization': 'Bearer ${auth.accessToken}',
+        'X-Goog-AuthUser': '0',
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Call this before any API call to ensure apis are fresh
+  static Future<bool> ensureApisReady() async {
+    if (currentUser == null) return false;
+    await _initApis();
+    return calendarApi != null && driveApi != null;
+  }
+
+  /// Get a fresh access token (auto-refreshes if expired)
+  static Future<String?> getAccessToken() async {
+    try {
+      final account = _googleSignIn.currentUser ?? await signInSilently();
+      if (account == null) return null;
+      final auth = await account.authentication;
+      return auth.accessToken;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    currentUser = null;
+    calendarApi = null;
+    driveApi = null;
+  }
+}
+
+class _GoogleAuthClient extends http.BaseClient {
+  final Map<String, String> headers;
+  final http.Client _inner = http.Client();
+
+  _GoogleAuthClient(this.headers);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      _inner.send(request..headers.addAll(headers));
+}

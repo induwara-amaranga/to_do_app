@@ -1,5 +1,6 @@
 import 'package:timezone/timezone.dart' as tz;
 import 'package:to_do_app/components/sync_tile.dart';
+import 'package:to_do_app/models/types.dart';
 import 'package:to_do_app/providers/calendar_sync_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:to_do_app/components/create_task_sheet.dart';
@@ -14,6 +15,7 @@ import 'package:to_do_app/providers/grouping_provider.dart';
 import 'package:to_do_app/providers/sorting_provider.dart';
 import 'package:to_do_app/providers/searching_provider.dart';
 import 'package:to_do_app/services/google_calendar_service.dart';
+import 'package:to_do_app/services/google_sign.dart';
 import 'package:to_do_app/services/local_calendar_service.dart';
 //import 'package:to_do_app/utils/date_time_utils.dart';
 import 'package:to_do_app/services/group_tasks_service.dart';
@@ -21,6 +23,7 @@ import 'package:to_do_app/models/grouping_mode.dart';
 import 'package:provider/provider.dart';
 import 'package:to_do_app/services/notification_service.dart';
 import 'package:to_do_app/services/outlook_calendar_service.dart';
+import 'package:to_do_app/services/outlook_sign.dart';
 import 'package:to_do_app/services/repeat_task.dart';
 import 'package:to_do_app/services/search_tasks.dart';
 import 'package:to_do_app/services/sort_tasks_service.dart';
@@ -83,9 +86,6 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   String groupType = "Default";
   String sortType = "Default";
 
-  List<String> repeatTypes = ["none", "daily", "weekly", "monthly", "yearly"];
-  List<String> priorityTypes = ["Low", "Medium", "High"];
-  List<String> remainderTypes = ["minutes", "hours", "days", "weeks", "none"];
   List<String> _hidingCategories = [];
 
   final _taskNameController = TextEditingController();
@@ -161,6 +161,14 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   void checkBoxChanged(bool? value, int index) {
     print("Checkbox at index $index changed to $value");
 
+    if (value != null) {
+      if (value) {
+        db.toDoList[index][18] = DateTime.now().toUtc().toString();
+      } else {
+        db.toDoList[index][18] = "none";
+      }
+    }
+
     // Step 1: toggle checkbox
     setState(() {
       db.toDoList[index][1] = !db.toDoList[index][1];
@@ -180,38 +188,46 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     db.updateDataBase();
   }
 
-  void saveNewTask(Map<String, dynamic> taskDetails) {
+  void saveNewTask(Map<String, dynamic> taskDetails) async {
+    final selectedRemainderType = taskDetails['repeatType']; //7
+    final selectedRemainderAmount = taskDetails['remainderAmount'];
     String id = uuid.v4();
+    List<dynamic> task = [
+      taskDetails['taskName'], //0
+      false, //1
+      taskDetails['taskNote'], //2
+      taskDetails['dueDate'], //3
+      taskDetails['dueTime'], //4
+      taskDetails['taskCategory'], //5
+      taskDetails['taskPriority'], //6
+      taskDetails['repeatType'], //7
+      taskDetails['remainderAmount'], //8
+      taskDetails['remainderType'], //9
+      taskDetails['isStarred'], //10
+      taskDetails['createdAt'], //11
+      id, //12
+      taskDetails['subTasks'] ?? [], //13
+      "", //14 cal id
+      "", //15 event id
+      ["", "", ""], //16  cal event ids
+      "manual", //17 is synced
+      "none", //18 completed at
+      [], //19 notification ids
+    ];
+    print("at task page details: $taskDetails");
     setState(() {
       print("adding tasks $taskDetails");
-      db.toDoList.add([
-        taskDetails['taskName'], //0
-        false, //1
-        taskDetails['taskNote'], //2
-        taskDetails['dueDate'], //3
-        taskDetails['dueTime'], //4
-        taskDetails['taskCategory'], //5
-        taskDetails['taskPriority'], //6
-        taskDetails['repeatType'], //7
-        taskDetails['remainderAmount'], //8
-        taskDetails['remainderType'], //9
-        taskDetails['isStarred'], //10
-        taskDetails['createdAt'], //11
-        id, //12
-        taskDetails['subTasks'] ?? [], //13
-        "", //14 cal id
-        "", //15 event id
-        "", //16 local cal event id
-        "manual", //17 is synced
-      ]);
+      db.toDoList.add(task);
     });
 
     // ⏰ Schedule notification if remainder is set
-    if (_selectedRemainderAmount >= 0 && _selectedRemainderType != "none") {
-      NotificationService.scheduleInitialRemainderForTask(
+    if (selectedRemainderAmount >= 0 && selectedRemainderType != "none") {
+      await NotificationService.scheduleInitialRemainderForTask(
         id,
         context,
         taskDetails,
+        db,
+        toDoList.length - 1,
       );
       // DateTime? dueDate = DateTimeUtilsHelper.parseDate(_selectedDueDate);
       // DateTime? dueTime = DateTimeUtilsHelper.parseTime(_selectedDueTime);
@@ -254,28 +270,8 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     //     }).toList();
     hotTasks = getUpcomingTasksWithinHotPeriod(toDoList);
     db.updateDataBase();
-    if (db.syncToCalendars["local"] != "none") {
-      print("🔄");
-      LocalCalendarService.addEvent(db.syncToCalendars["local"], [
-        taskDetails['taskName'], //0
-        false, //1
-        taskDetails['taskNote'], //2
-        taskDetails['dueDate'], //3
-        taskDetails['dueTime'], //4
-        taskDetails['taskCategory'], //5
-        taskDetails['taskPriority'], //6
-        taskDetails['repeatType'], //7
-        taskDetails['remainderAmount'], //8
-        taskDetails['remainderType'], //9
-        taskDetails['isStarred'], //10
-        taskDetails['createdAt'], //11
-        id, //12
-        taskDetails['subTasks'] ?? [], //13
-        "", //14 cal id
-        "", //15
-        "", //16
-      ]);
-    }
+    await addOrUpdateEvent(task);
+
     //print(db.toDoList);
     _taskNameController.clear();
     _taskNoteController.clear();
@@ -283,10 +279,13 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   }
 
   void deleteTask(int index) async {
-    await LocalCalendarService.deleteEvent(
-      db.toDoList[index][16],
-      db.syncToCalendars["local"],
-    );
+    await deleteEvent(db.toDoList[index]);
+    print("notifications ${db.toDoList[index][19]}");
+    for (int id in db.toDoList[index][19]) {
+      print("calling to id $id for deleted task");
+      await NotificationService.cancelNotification(id);
+    }
+
     setState(() {
       db.toDoList.removeAt(index);
     });
@@ -297,12 +296,13 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     //     }).toList();
     hotTasks = getUpcomingTasksWithinHotPeriod(toDoList);
     db.updateDataBase();
-    if (db.syncToCalendars["local"] != "none" && db.toDoList[index][16] != "") {
+    if (db.syncToCalendars["local"] != "none" &&
+        db.toDoList[index][16][0] != "") {
       print("🔄");
     }
   }
 
-  void editTask(int index, Map<String, dynamic> taskDetails) {
+  void editTask(int index, Map<String, dynamic> taskDetails) async {
     String id = uuid.v4();
     String oldId = db.toDoList[index][12];
     setState(() {
@@ -320,14 +320,19 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
       //db.toDoList[index][12] = id;
       db.toDoList[index][13] = taskDetails['subTasks'] ?? [];
     });
-    NotificationService.cancelNotification(oldId.hashCode);
+    for (int id in db.toDoList[index][19]) {
+      print("calling to id $id for deleted task");
+      await NotificationService.cancelNotification(id);
+    }
     // ⏰ Schedule notification if remainder is set
     if (taskDetails['remainderAmount'] >= 0 &&
         taskDetails['remainderType'] != "none") {
-      NotificationService.scheduleInitialRemainderForTask(
+      await NotificationService.scheduleInitialRemainderForTask(
         id,
         context,
         taskDetails,
+        db,
+        index,
       );
       // DateTime? dueDate = DateTimeUtilsHelper.parseDate(taskDetails['dueDate']);
       // DateTime? dueTime = DateTimeUtilsHelper.parseTime(taskDetails['dueTime']);
@@ -427,14 +432,18 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
       if (db.syncToCalendars["google"] != "none") {
         try {
           //if (db.syncToCalendars["google"] != "none") {
-          googleRestored = await GoogleCalendarService.restoreLastSession();
+          bool isReay = await GoogleAuthService.ensureApisReady();
+          print("Google APIs ready: $isReay");
         } catch (d) {
           print("Failed to sync google calendars: $d");
         }
       }
       if (db.syncToCalendars["outlook"] != "none") {
         try {
-          outlookRestored = await OutlookCalendarService.restoreLastSession();
+          outlookRestored =
+              await OutlookAuthService.acquireTokenSilently() != null
+                  ? true
+                  : false;
         } catch (d) {
           print("Failed to sync outlook calendars: $d");
         }
@@ -615,13 +624,12 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                     context: context,
                     builder:
                         (context) => CreateTaskSheet(
+                          isStarred: _isStarred,
                           taskName: "",
                           taskNote: "",
                           initialSubtasks: [],
                           buttonText: "Add Task",
-                          taskNameController: _taskNameController,
-                          taskNoteController: _taskNoteController,
-                          remainderAmountController: _remainderAmountController,
+
                           onSave: (taskDetails) {
                             // setState(() {
                             //   _selectedDueDate = taskDetails['dueDate'];
@@ -690,151 +698,6 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     );
   }
 
-  // Build sliver tasks for a tab (no independent scroll)
-  /*Key points
-
-    1.No independent scroll: Inner CustomScrollView for the tab has NeverScrollableScrollPhysics().
-
-    2.Sliver-based layout: Each task group uses SliverToBoxAdapter for header + SliverList for tasks.
-
-    3.Single scrollable space: SliverAppBar and all task lists scroll together seamlessly.
-    
-  */
-  // Widget _buildTasksForTab(
-  //   String? tabName,
-  //   GroupingMode grouping,
-  //   SortingMode sorting,
-  //   String query,
-  // ) {
-  //   List tasksOfThisTab;
-
-  //   if (tabName == "All") {
-  //     SortTasksService.sortTasksByMode(db.toDoList, sorting)
-  //         as List<List<dynamic>>;
-  //     db.toDoList = tasksOfThisTab = db.toDoList;
-  //     //print("+++++++++++++" + (db.toDoList[0][10] == "true").toString());
-  //   } else if (db.categories.contains(tabName)) {
-  //     tasksOfThisTab = db.toDoList.where((t) => t[5] == tabName).toList();
-  //   } else if (["High", "Medium", "Low"].contains(tabName)) {
-  //     tasksOfThisTab = db.toDoList.where((t) => t[6] == tabName).toList();
-  //   } else {
-  //     tasksOfThisTab = [];
-  //   }
-  //   tasksOfThisTab = tasksOfThisTab.where((t) => !t[1]).toList();
-
-  //   tasksOfThisTab = SearchTasks.searchByQuery(query, tasksOfThisTab);
-
-  //   // 3️⃣ Apply sorting
-  //   //final sorting = context.read<SortingProvider>().mode;
-
-  //   tasksOfThisTab = SortTasksService.sortTasksByMode(tasksOfThisTab, sorting);
-
-  //   // Map<String, List> grouped = {"today": [], "upcoming": [], "missed": []};
-
-  //   Map<String, List> grouped = GroupTasksService.groupTasksByMode(
-  //     tasksOfThisTab.cast<List<dynamic>>(),
-  //     grouping,
-  //     false,
-  //   );
-
-  //   return ListView(
-  //     padding: const EdgeInsets.only(bottom: 100),
-  //     children: [
-  //       // show a colored icon depending on whether tasks exist
-  //       // if ((hotTasks['High']!.isEmpty && hotTasks['Medium']!.isEmpty))
-  //       //   const Icon(
-  //       //     Icons.circle,
-  //       //     color: Color.fromARGB(255, 255, 255, 255),
-  //       //     size: 14,
-  //       //   )
-  //       // else
-  //       //   const Icon(
-  //       //     Icons.circle,
-  //       //     color: Color.fromARGB(255, 250, 0, 0),
-  //       //     size: 14,
-  //       //   ),
-  //       for (var entry in grouped.entries) ...[
-  //         // --- Fixed header ---
-  //         Padding(
-  //           padding: const EdgeInsets.all(8.0),
-  //           child: Text(
-  //             entry.key.toUpperCase(),
-  //             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-  //           ),
-  //         ),
-
-  //         // --- Reorderable tasks inside this group ---
-  //         ReorderableListView.builder(
-  //           shrinkWrap: true,
-  //           physics: const NeverScrollableScrollPhysics(),
-  //           itemCount: entry.value.length,
-  //           onReorder: (oldIndex, newIndex) {
-  //             //setState(() {});
-  //             //get the id of the moving task
-  //             if (newIndex > oldIndex) newIndex -= 1;
-  //             final movingTaskId = entry.value[oldIndex][12];
-  //             final destinationTaskID = entry.value[newIndex][12];
-  //             //print("Moving task id: $movingTaskId");
-  //             oldIndex = db.toDoList.indexWhere(
-  //               (task) => task[12] == movingTaskId,
-  //             );
-  //             newIndex = db.toDoList.indexWhere(
-  //               (task) => task[12] == destinationTaskID,
-  //             );
-
-  //             // Adjust index if moving down
-
-  //             // Remove and insert task in the current entry list
-  //             final task = db.toDoList.removeAt(oldIndex);
-  //             db.toDoList.insert(newIndex, task);
-  //             db.updateDataBase();
-  //             sortingProvider.setMode(SortingMode.manual);
-
-  //             setState(() {});
-  //           },
-
-  //           itemBuilder: (context, index) {
-  //             final task = entry.value[index];
-  //             //print("************Rendering task: $task");
-  //             return TaskTile(
-  //               key: ValueKey('${task[0]}_${task[12]}'), // unique key
-
-  //               initialSubtasks:
-  //                   task[13] != null
-  //                       ? (task[13] as List<dynamic>)
-  //                           .map((e) => Map<String, dynamic>.from(e as Map))
-  //                           .toList()
-  //                       : [],
-  //               index: db.toDoList.indexOf(task),
-  //               isStarred: task[10] == "true",
-  //               taskName: task[0],
-  //               taskCompleted: task[1],
-  //               taskNote: task[2],
-  //               dueDate: DateTimeUtilsHelper.parseDate(task[3]),
-  //               dueTime:
-  //                   task[4] != "00:00"
-  //                       ? DateTimeUtilsHelper.parseTime(task[4])
-  //                       : null,
-  //               taskCategory: task[5],
-  //               taskPriority: task[6],
-  //               repeatType: task[7],
-  //               remainderAmount: task[8],
-  //               remainderType: task[9],
-  //               onChanged: (index, value) => checkBoxChanged(value, index),
-  //               deleteFunction:
-  //                   (context) => deleteTask(db.toDoList.indexOf(task)),
-  //               onEdit: (index, taskDetails) => editTask(index, taskDetails),
-  //               repeatTypes: repeatTypes,
-  //               priorityTypes: priorityTypes,
-  //               remainderTypes: remainderTypes,
-  //               categoryTypes: db.categories,
-  //             );
-  //           },
-  //         ),
-  //       ],
-  //     ],
-  //   );
-  // }
   Widget _buildTasksForTab(
     String? tabName,
     GroupingMode grouping,
@@ -890,11 +753,23 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     );
 
     //groupe calendar tasks
-    Map<String, List> groupedCalTasks = GroupTasksService.groupTasksByMode(
-      db.calTasks.cast<List<dynamic>>(),
+    Map<String, List> groupedLocalCalTasks = GroupTasksService.groupTasksByMode(
+      db.localCalTasks.cast<List<dynamic>>(),
       grouping,
       showCompletedTasks,
     );
+    Map<String, List> groupedGoogleCalTasks =
+        GroupTasksService.groupTasksByMode(
+          db.googleCalTasks.cast<List<dynamic>>(),
+          grouping,
+          showCompletedTasks,
+        );
+    Map<String, List> groupedOutlookCalTasks =
+        GroupTasksService.groupTasksByMode(
+          db.outlookCalTasks.cast<List<dynamic>>(),
+          grouping,
+          showCompletedTasks,
+        );
 
     // State for expanded groups
     final Map<String, bool> expandedGroups = {
@@ -953,7 +828,13 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                           ),
 
                       children: [
-                        ...groupedCalTasks[groupKey]!.map(
+                        ...groupedLocalCalTasks[groupKey]!.map(
+                          (e) => SyncTile(task: e),
+                        ),
+                        ...groupedGoogleCalTasks[groupKey]!.map(
+                          (e) => SyncTile(task: e),
+                        ),
+                        ...groupedOutlookCalTasks[groupKey]!.map(
                           (e) => SyncTile(task: e),
                         ),
 
@@ -1294,13 +1175,13 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     String outlookCalendarId = db.syncToCalendars["outlook"];
     String googleCalendarId = db.syncToCalendars["google"];
     if (localCalendarId != "none") {
-      LocalCalendarService.addEvent(localCalendarId, task);
+      await LocalCalendarService.addEvent(localCalendarId, task);
     }
     if (outlookCalendarId != "none") {
-      OutlookCalendarService.addOrUpdateEvent(outlookCalendarId, task);
+      await OutlookCalendarService.addOrUpdateEvent(outlookCalendarId, task);
     }
     if (googleCalendarId != "none") {
-      GoogleCalendarService.addOrUpdateEvent(googleCalendarId, task);
+      await GoogleCalendarService.addOrUpdateEvent(googleCalendarId, task);
     }
   }
 
@@ -1309,13 +1190,13 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     String outlookCalendarId = db.syncToCalendars["outlook"];
     String googleCalendarId = db.syncToCalendars["google"];
     if (localCalendarId != "none") {
-      LocalCalendarService.deleteEvent(localCalendarId, task[16]);
+      await LocalCalendarService.deleteEvent(localCalendarId, task[16][0]);
     }
     if (outlookCalendarId != "none") {
-      OutlookCalendarService.deleteEvent(outlookCalendarId, task[16]);
+      await OutlookCalendarService.deleteEvent(outlookCalendarId, task[16][2]);
     }
     if (googleCalendarId != "none") {
-      GoogleCalendarService.deleteEvent(googleCalendarId, task[16]);
+      await GoogleCalendarService.deleteEvent(googleCalendarId, task[16][2]);
     }
   }
 

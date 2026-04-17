@@ -31,7 +31,7 @@ class _SavedTimetablesPageState extends State<SavedTimetablesPage> {
   List<File> savedFiles = [];
   List<File> viewingFiles = [];
   String query = "";
-  String view = "listView";
+  String view = "tileView";
   SortingMode sorting = SortingMode.createdDateDecreasing;
   @override
   initState() {

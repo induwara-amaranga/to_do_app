@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ViewProvider with ChangeNotifier {
-  String _currentView = 'home';
+  String _currentView = 'tileView';
 
   String get currentView => _currentView;
 

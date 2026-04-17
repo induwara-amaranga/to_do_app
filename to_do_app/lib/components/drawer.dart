@@ -2,6 +2,7 @@ import "package:flutter/material.dart";
 import "package:to_do_app/data/database.dart";
 import "package:to_do_app/pages/import_ics_page.dart";
 import "package:to_do_app/pages/sign_in_page.dart";
+import "package:to_do_app/services/google_sign.dart";
 
 class MyDrawer extends StatefulWidget {
   final VoidCallback onImported;
@@ -58,7 +59,7 @@ class _MyDrawerState extends State<MyDrawer> {
                           radius: 50,
                           child: ClipOval(
                             child: Image.network(
-                              widget.db.accountDetails["profilePicture"] ?? '',
+                              GoogleAuthService.currentUser?.photoUrl ?? '',
                               fit: BoxFit.cover,
                               width: 60,
                               height: 60,
@@ -69,9 +70,9 @@ class _MyDrawerState extends State<MyDrawer> {
                           ),
                         ),
                         Text(
-                          widget.db.accountDetails["userName"] != "none"
-                              ? widget.db.accountDetails["userName"]
-                              : 'Sign In',
+                          GoogleAuthService.currentUser?.displayName ??
+                              'Signed In',
+
                           style: TextStyle(color: Colors.white, fontSize: 20),
                         ),
                       ],

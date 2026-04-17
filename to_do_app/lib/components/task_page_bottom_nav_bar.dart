@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:to_do_app/pages/task_page.dart';
 
 class TaskBottomNavBar extends StatefulWidget {
   const TaskBottomNavBar({super.key});
@@ -23,12 +24,19 @@ class _BottomNavBarState extends State<TaskBottomNavBar> {
         ),
       ],
       currentIndex: 1,
+
       selectedItemColor: Theme.of(context).colorScheme.primary,
       unselectedItemColor: Theme.of(
         context,
       ).colorScheme.onSurface.withAlpha(100),
       onTap: (index) {
-        // Handle navigation logic here
+        if (index == 1) {
+          Navigator.pushNamed(context, '/');
+        } else if (index == 0) {
+          Navigator.pushNamed(context, '/calendar');
+        } else if (index == 2) {
+          Navigator.pushNamed(context, '/statistics');
+        }
       },
     );
   }

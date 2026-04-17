@@ -68,12 +68,24 @@ class SyncTile extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                task[0],
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSecondary,
-                  fontSize: 16,
-                ),
+              child: Row(
+                children: [
+                  Text(
+                    task[0],
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSecondary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "DateTime",
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
