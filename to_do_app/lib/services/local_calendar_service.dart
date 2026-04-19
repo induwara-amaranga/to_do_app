@@ -288,8 +288,7 @@ class LocalCalendarService {
         // );
 
         return task.length > 15 &&
-            ((task[14] == event.calendarId && task[15] == event.eventId) ||
-                task[16][0] == event.eventId);
+            (task[14] == event.calendarId && task[16][0] == event.eventId);
       });
 
       if (existingIndex != -1) {
@@ -328,7 +327,7 @@ class LocalCalendarService {
         taskDetails['subTasks'],
         taskDetails['calendarId'], // store calendar ID
         taskDetails['eventId'],
-        taskDetails['eventId'],
+        [taskDetails['eventId'], "", ""],
         "local calendar",
         "none", //18 completed at
         [],
@@ -511,7 +510,7 @@ class LocalCalendarService {
   static Future<void> syncTasksFromCalendar(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["local"];
-    db.localCalTasks.removeWhere((t) => t[14] == calID);
+    //db.localCalTasks.removeWhere((t) => t[14] == calID);
     List<dynamic> events = await getEvents(calID);
     await importViewOnlyEventsToDB(events, db);
   }
@@ -559,16 +558,13 @@ class LocalCalendarService {
         'calendarId': event.calendarId,
         'eventId': event.eventId,
       };
+      //print("--------------------------> ${db.localCalTasks}");
 
       // Find if this event already exists
       final existingIndex = db.localCalTasks.indexWhere((task) {
-        // print(
-        //   "${task[14]} == ${event.calendarId} && ${task[15]} == ${event.eventId}",
-        // );
+        //print("${task[16]} == ${event.eventId}");
 
-        return task.length > 15 &&
-            ((task[14] == event.calendarId && task[15] == event.eventId) ||
-                task[16][0] == event.eventId);
+        return task.length > 15 && task[16] == event.eventId;
       });
 
       final combined = DateTimeUtilsHelper.combineDateAndTime(

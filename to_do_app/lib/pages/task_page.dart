@@ -14,6 +14,7 @@ import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/providers/grouping_provider.dart';
 import 'package:to_do_app/providers/sorting_provider.dart';
 import 'package:to_do_app/providers/searching_provider.dart';
+import 'package:to_do_app/services/cordinate_calendars.dart';
 import 'package:to_do_app/services/google_calendar_service.dart';
 import 'package:to_do_app/services/google_sign.dart';
 import 'package:to_do_app/services/local_calendar_service.dart';
@@ -227,7 +228,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
         context,
         taskDetails,
         db,
-        toDoList.length - 1,
+        db.toDoList.length - 1,
       );
       // DateTime? dueDate = DateTimeUtilsHelper.parseDate(_selectedDueDate);
       // DateTime? dueTime = DateTimeUtilsHelper.parseTime(_selectedDueTime);
@@ -264,13 +265,14 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     print("A F T E R   N E W   T A S K-----------------------------");
     print(db.toDoList);
     toDoList = db.toDoList;
+    await CordinateCalendars.addUpdateTaskToCalendars(db, task);
     // categorizedToDOTasks =
     //     _taskCategoryTabs().map((tab) {
     //       return _buildTasksForTab(tab.text, grouping, sorting, query);
     //     }).toList();
     hotTasks = getUpcomingTasksWithinHotPeriod(toDoList);
     db.updateDataBase();
-    await addOrUpdateEvent(task);
+    //await addOrUpdateEvent(task);
 
     //print(db.toDoList);
     _taskNameController.clear();
@@ -279,27 +281,24 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   }
 
   void deleteTask(int index) async {
-    await deleteEvent(db.toDoList[index]);
+    //await deleteEvent(db.toDoList[index]);
     print("notifications ${db.toDoList[index][19]}");
     for (int id in db.toDoList[index][19]) {
       print("calling to id $id for deleted task");
       await NotificationService.cancelNotification(id);
     }
 
-    setState(() {
-      db.toDoList.removeAt(index);
-    });
     toDoList = db.toDoList;
     // categorizedToDOTasks =
     //     _taskCategoryTabs().map((tab) {
     //       return _buildTasksForTab(tab.text, grouping, sorting, query);
     //     }).toList();
     hotTasks = getUpcomingTasksWithinHotPeriod(toDoList);
+    await CordinateCalendars.deleteTaskFromCalendars(db, db.toDoList[index]);
+    setState(() {
+      db.toDoList.removeAt(index);
+    });
     db.updateDataBase();
-    if (db.syncToCalendars["local"] != "none" &&
-        db.toDoList[index][16][0] != "") {
-      print("🔄");
-    }
   }
 
   void editTask(int index, Map<String, dynamic> taskDetails) async {
@@ -374,28 +373,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     //       return _buildTasksForTab(tab.text, grouping, sorting, query);
     //     }).toList();
     hotTasks = getUpcomingTasksWithinHotPeriod(toDoList);
-    if (db.syncToCalendars["local"] != "none") {
-      print("🔄");
-      LocalCalendarService.addEvent(db.syncToCalendars["local"], [
-        taskDetails['taskName'], //0
-        false, //1
-        taskDetails['taskNote'], //2
-        taskDetails['dueDate'], //3
-        taskDetails['dueTime'], //4
-        taskDetails['taskCategory'], //5
-        taskDetails['taskPriority'], //6
-        taskDetails['repeatType'], //7
-        taskDetails['remainderAmount'], //8
-        taskDetails['remainderType'], //9
-        taskDetails['isStarred'], //10
-        taskDetails['createdAt'], //11
-        db.toDoList[index][12], //12
-        taskDetails['subTasks'] ?? [], //13
-        db.toDoList[index][14], //14 cal id
-        db.toDoList[index][15], //15
-        db.toDoList[index][16], //16
-      ]);
-    }
+    await CordinateCalendars.addUpdateTaskToCalendars(db, db.toDoList[index]);
     db.updateDataBase();
   }
 
@@ -1170,35 +1148,35 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     );
   }
 
-  Future<void> addOrUpdateEvent(List<dynamic> task) async {
-    String localCalendarId = db.syncToCalendars["local"];
-    String outlookCalendarId = db.syncToCalendars["outlook"];
-    String googleCalendarId = db.syncToCalendars["google"];
-    if (localCalendarId != "none") {
-      await LocalCalendarService.addEvent(localCalendarId, task);
-    }
-    if (outlookCalendarId != "none") {
-      await OutlookCalendarService.addOrUpdateEvent(outlookCalendarId, task);
-    }
-    if (googleCalendarId != "none") {
-      await GoogleCalendarService.addOrUpdateEvent(googleCalendarId, task);
-    }
-  }
+  // Future<void> addOrUpdateEvent(List<dynamic> task) async {
+  //   String localCalendarId = db.syncToCalendars["local"];
+  //   String outlookCalendarId = db.syncToCalendars["outlook"];
+  //   String googleCalendarId = db.syncToCalendars["google"];
+  //   if (localCalendarId != "none") {
+  //     await LocalCalendarService.addEvent(localCalendarId, task);
+  //   }
+  //   if (outlookCalendarId != "none") {
+  //     await OutlookCalendarService.addOrUpdateEvent(outlookCalendarId, task);
+  //   }
+  //   if (googleCalendarId != "none") {
+  //     await GoogleCalendarService.addOrUpdateEvent(googleCalendarId, task);
+  //   }
+  // }
 
-  Future<void> deleteEvent(List<dynamic> task) async {
-    String localCalendarId = db.syncToCalendars["local"];
-    String outlookCalendarId = db.syncToCalendars["outlook"];
-    String googleCalendarId = db.syncToCalendars["google"];
-    if (localCalendarId != "none") {
-      await LocalCalendarService.deleteEvent(localCalendarId, task[16][0]);
-    }
-    if (outlookCalendarId != "none") {
-      await OutlookCalendarService.deleteEvent(outlookCalendarId, task[16][2]);
-    }
-    if (googleCalendarId != "none") {
-      await GoogleCalendarService.deleteEvent(googleCalendarId, task[16][2]);
-    }
-  }
+  // Future<void> deleteEvent(List<dynamic> task) async {
+  //   String localCalendarId = db.syncToCalendars["local"];
+  //   String outlookCalendarId = db.syncToCalendars["outlook"];
+  //   String googleCalendarId = db.syncToCalendars["google"];
+  //   if (localCalendarId != "none") {
+  //     await LocalCalendarService.deleteEvent(localCalendarId, task[16][0]);
+  //   }
+  //   if (outlookCalendarId != "none") {
+  //     await OutlookCalendarService.deleteEvent(outlookCalendarId, task[16][2]);
+  //   }
+  //   if (googleCalendarId != "none") {
+  //     await GoogleCalendarService.deleteEvent(googleCalendarId, task[16][2]);
+  //   }
+  // }
 
   Future<void> importViewOnly() async {
     final syncProvider = context.read<CalendarSyncProvider>();

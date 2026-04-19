@@ -340,7 +340,7 @@ class GoogleCalendarService {
       final dueTime = start.toIso8601String().split('T')[1].split('.')[0];
 
       final existingIndex = db.toDoList.indexWhere(
-        (t) => t[15] == e.id && t[14] == calendarId,
+        (t) => t[16][1] == e.id && t[14] == calendarId,
       );
       if (existingIndex != -1) {
         db.toDoList[existingIndex][0] = e.summary ?? 'Untitled Event';
@@ -377,7 +377,7 @@ class GoogleCalendarService {
         [], //13
         calendarId, //14
         e.id, //15
-        e.id, //16
+        ["", e.id, ""], //16
         _account?.displayName ?? 'google',
         "none", //18 completed at
         [],
@@ -449,8 +449,7 @@ class GoogleCalendarService {
       final existingIndex = db.googleCalTasks.indexWhere(
         (task) =>
             task.length > 15 &&
-            ((task[14] == calendarId && task[15] == event.id) ||
-                task[16][1] == event.id),
+            (task[14] == calendarId && task[16] == event.id),
       );
 
       final combined = DateTimeUtilsHelper.combineDateAndTime(
@@ -618,7 +617,7 @@ class GoogleCalendarService {
   static Future<void> syncTasksFromCalendars(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["google"];
-    db.googleCalTasks.removeWhere((t) => t[14] == calID);
+    //db.googleCalTasks.removeWhere((t) => t[14] == calID);
     List<dynamic> events = await getEvents(calID);
     try {
       await importViewOnlyEventsToDB(events, db);

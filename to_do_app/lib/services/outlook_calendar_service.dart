@@ -329,7 +329,7 @@ class OutlookCalendarService {
 
       // Check if already exists in DB
       final existingIndex = db.toDoList.indexWhere(
-        (t) => t.length > 15 && t[15] == eventId && t[14] == calendarId,
+        (t) => t.length > 15 && t[16][2] == eventId && t[14] == calendarId,
       );
 
       if (existingIndex != -1) {
@@ -367,7 +367,7 @@ class OutlookCalendarService {
         [], // 13: subTasks
         calendarId, // 14
         eventId, // 15
-        eventId, // 16 duplicate id for consistency
+        ["", "", eventId], // 16 duplicate id for consistency
         "outlook", // 17 placeholder
         "none", //18 completed at
         [],
@@ -441,9 +441,7 @@ class OutlookCalendarService {
       // );
       // Check if already exists in DB
       final existingIndex = db.toDoList.indexWhere(
-        (t) =>
-            t.length > 15 &&
-            ((t[15] == eventId && t[14] == calendarId) || t[16] == eventId),
+        (t) => t.length > 15 && (t[15] == eventId && t[16] == calendarId),
       );
 
       if (existingIndex != -1) {
@@ -519,7 +517,7 @@ class OutlookCalendarService {
   static Future<void> syncTasksFromCalendar(ToDoDataBase db) async {
     print("sync from------------------------------");
     final calID = db.syncToCalendars["outlook"];
-    db.outlookCalTasks.removeWhere((t) => t[14] == calID);
+    //db.outlookCalTasks.removeWhere((t) => t[14] == calID);
     //List<dynamic> events = await getEvents(calID);
     try {
       await importViewOnlyEventsToDB(calID, db);
