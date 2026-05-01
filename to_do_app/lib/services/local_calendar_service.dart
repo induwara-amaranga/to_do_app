@@ -57,6 +57,7 @@ class LocalCalendarService {
       // Parse due date and time
       final dueDate = DateTimeUtilsHelper.parseDate(task[3]);
       final dueTime = DateTimeUtilsHelper.parseDate(task[4]);
+      RecurrenceRule? recurrenceRule = _buildRecurrenceRule(task[7]);
 
       if (dueDate == null) {
         print('⚠️ Skipped: missing due date for ${task[0]}');
@@ -98,6 +99,7 @@ class LocalCalendarService {
         start: start,
         end: end,
         eventId: task[16][0],
+        recurrenceRule: recurrenceRule,
       );
       print('event${event.start} ${event.end}');
 
@@ -529,7 +531,19 @@ class LocalCalendarService {
     int importedCount = 0;
     int updatedCount = 0;
 
+    // Recurring events expand into many instances with the same eventId.
+    // Keep only the earliest instance per eventId so we import the start date.
+    final Map<String, dynamic> earliestByEventId = {};
     for (final event in events) {
+      if (event.start == null || event.eventId == null) continue;
+      final existing = earliestByEventId[event.eventId];
+      if (existing == null || (event.start as DateTime).isBefore(existing.start as DateTime)) {
+        earliestByEventId[event.eventId] = event;
+      }
+    }
+    final deduplicatedEvents = earliestByEventId.values.toList();
+
+    for (final event in deduplicatedEvents) {
       if (event.start == null) continue;
 
       // Parse start time into date/time strings
@@ -614,7 +628,7 @@ class LocalCalendarService {
         taskDetails['calendarId'], // store calendar ID
         taskDetails['eventId'],
         taskDetails['eventId'],
-        false,
+        "local",
         "none", //18 completed at
       ]);
 
@@ -628,5 +642,28 @@ class LocalCalendarService {
     print(
       '✅ Imported $importedCount new events, updated $updatedCount existing ones.',
     );
+  }
+
+  static RecurrenceRule? _buildRecurrenceRule(String? repeatType) {
+    if (repeatType == null || repeatType == 'none' || repeatType == 'None') {
+      return null; // no repeat
+    }
+
+    switch (repeatType.toLowerCase()) {
+      case 'daily':
+        return RecurrenceRule(RecurrenceFrequency.Daily, interval: 1);
+
+      case 'weekly':
+        return RecurrenceRule(RecurrenceFrequency.Weekly, interval: 1);
+
+      case 'monthly':
+        return RecurrenceRule(RecurrenceFrequency.Monthly, interval: 1);
+
+      case 'yearly':
+        return RecurrenceRule(RecurrenceFrequency.Yearly, interval: 1);
+
+      default:
+        return null;
+    }
   }
 }

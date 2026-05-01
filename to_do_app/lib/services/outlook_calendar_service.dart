@@ -228,6 +228,10 @@ class OutlookCalendarService {
       "start": {"dateTime": start, "timeZone": "UTC"},
       "end": {"dateTime": end, "timeZone": "UTC"},
     };
+    final recurrence = _buildRecurrenceRule(eventData[7]);
+    if (recurrence != null) {
+      eventBody["recurrence"] = recurrence;
+    }
 
     if (exists) {
       print("Updating existing event: $eventId");
@@ -440,8 +444,8 @@ class OutlookCalendarService {
       //       ((t[15] == eventId && t[14] == calendarId) || t[16] == eventId),
       // );
       // Check if already exists in DB
-      final existingIndex = db.toDoList.indexWhere(
-        (t) => t.length > 15 && (t[15] == eventId && t[16] == calendarId),
+      final existingIndex = db.outlookCalTasks.indexWhere(
+        (t) => t.length > 15 && (t[15] == eventId && t[14] == calendarId),
       );
 
       if (existingIndex != -1) {
@@ -480,7 +484,7 @@ class OutlookCalendarService {
         calendarId, // 14
         eventId, // 15: Outlook event ID
         eventId, // 16: duplicate for consistency
-        true, // 17: mark as read-only
+        "outlook", // 17: mark as read-only
         "none", //18 completed at
       ]);
 
@@ -524,5 +528,37 @@ class OutlookCalendarService {
     } catch (e) {
       print("Sync from error $e");
     }
+  }
+
+  static Map<String, dynamic>? _buildRecurrenceRule(String? repeatType) {
+    if (repeatType == null || repeatType == 'none' || repeatType == 'None') {
+      return null;
+    }
+
+    String? pattern;
+    switch (repeatType.toLowerCase()) {
+      case 'daily':
+        pattern = 'daily';
+        break;
+      case 'weekly':
+        pattern = 'weekly';
+        break;
+      case 'monthly':
+        pattern = 'absoluteMonthly';
+        break;
+      case 'yearly':
+        pattern = 'absoluteYearly';
+        break;
+      default:
+        return null;
+    }
+
+    return {
+      "pattern": {"type": pattern, "interval": 1},
+      "range": {
+        "type": "noEnd", // repeats forever
+        "startDate": DateTime.now().toIso8601String().split('T')[0],
+      },
+    };
   }
 }

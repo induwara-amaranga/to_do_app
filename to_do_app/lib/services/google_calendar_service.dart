@@ -239,9 +239,12 @@ class GoogleCalendarService {
       final dueTime = DateTimeUtilsHelper.parseTime(task[4]);
       if (dueDate == null) return;
 
-      final start = DateTimeUtilsHelper.combineDateAndTime(
+      final startUnflagged = DateTimeUtilsHelper.combineDateAndTime(
         dueDate,
         dueTime ?? DateTime(0),
+      );
+      final start = DateTimeUtilsHelper.utcDateTimeFromUTCvalues(
+        startUnflagged,
       );
       final end = start.add(const Duration(minutes: 30));
       // final exists = events.cast<Event?>().firstWhere((e) {
@@ -271,9 +274,10 @@ class GoogleCalendarService {
         final event = gcal.Event(
           summary: task[0] ?? 'Untitled Task',
           description: task[2] ?? '',
-          start: gcal.EventDateTime(dateTime: start.toUtc(), timeZone: 'UTC'),
-          end: gcal.EventDateTime(dateTime: end.toUtc(), timeZone: 'UTC'),
+          start: gcal.EventDateTime(dateTime: start, timeZone: 'UTC'),
+          end: gcal.EventDateTime(dateTime: end, timeZone: 'UTC'),
           id: task.length > 16 ? task[16][1] : null,
+          recurrence: _buildRecurrenceRule(task[7]),
         );
         final result = await _calendarApi!.events.patch(
           event,
@@ -291,8 +295,9 @@ class GoogleCalendarService {
       final event = gcal.Event(
         summary: task[0] ?? 'Untitled Task',
         description: task[2] ?? '',
-        start: gcal.EventDateTime(dateTime: start.toUtc(), timeZone: 'UTC'),
-        end: gcal.EventDateTime(dateTime: end.toUtc(), timeZone: 'UTC'),
+        start: gcal.EventDateTime(dateTime: start, timeZone: 'UTC'),
+        end: gcal.EventDateTime(dateTime: end, timeZone: 'UTC'),
+        recurrence: _buildRecurrenceRule(task[7]),
         //id: task.length > 16 ? task[16][1] : null,
       );
 
@@ -500,7 +505,7 @@ class GoogleCalendarService {
         taskDetails['calendarId'],
         taskDetails['eventId'],
         taskDetails['eventId'],
-        false,
+        "google",
         "none", //18 completed at
       ]);
 
@@ -623,6 +628,25 @@ class GoogleCalendarService {
       await importViewOnlyEventsToDB(events, db);
     } catch (e) {
       print("Sync from error $e");
+    }
+  }
+
+  static List<String>? _buildRecurrenceRule(String? repeatType) {
+    if (repeatType == null || repeatType == 'none' || repeatType == 'None') {
+      return null;
+    }
+
+    switch (repeatType.toLowerCase()) {
+      case 'daily':
+        return ['RRULE:FREQ=DAILY;INTERVAL=1'];
+      case 'weekly':
+        return ['RRULE:FREQ=WEEKLY;INTERVAL=1'];
+      case 'monthly':
+        return ['RRULE:FREQ=MONTHLY;INTERVAL=1'];
+      case 'yearly':
+        return ['RRULE:FREQ=YEARLY;INTERVAL=1'];
+      default:
+        return null;
     }
   }
 }

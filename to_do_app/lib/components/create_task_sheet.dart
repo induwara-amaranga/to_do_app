@@ -95,18 +95,23 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     reminderAmountController = TextEditingController(
       text: widget.initialRemainderAmount.toString(),
     );
-    if (_selectedDueDate == null) _selectedDueDate = DateTime.now().toUtc();
-    if (_selectedDueTime == null)
-      _selectedDueTime = DateTimeUtilsHelper.toUtcUsingLocal(
+    if (widget.initialDueDate != null) {
+      // Editing existing task: stored UTC values → local for display
+      _selectedDueTime ??= DateTimeUtilsHelper.toUtcUsingLocal(
         DateTime(1970, 1, 1, 23, 59),
       );
-    final combinedTime = DateTimeUtilsHelper.combineDateAndTime(
-      _selectedDueDate,
-      _selectedDueTime,
-    );
-    final localTime = DateTimeUtilsHelper.toLocalUsingTz(combinedTime);
-    _selectedDueDate = localTime;
-    _selectedDueTime = localTime;
+      final combinedTime = DateTimeUtilsHelper.combineDateAndTime(
+        _selectedDueDate,
+        _selectedDueTime,
+      );
+      final localTime = DateTimeUtilsHelper.toLocalUsingTz(combinedTime);
+      _selectedDueDate = localTime;
+      _selectedDueTime = localTime;
+    } else {
+      // New task: use device local time directly — no UTC conversion needed
+      _selectedDueDate = DateTime.now();
+      _selectedDueTime = DateTime(1970, 1, 1, 23, 59);
+    }
     _isStarred = widget.isStarred;
     print("time $_selectedDueDate  $_selectedDueTime");
   }

@@ -1,5 +1,6 @@
 import 'package:hive/hive.dart';
 import 'package:to_do_app/utils/date_time_utils.dart';
+
 //import 'package:flutter_native_timezone_updated/flutter_native_timezone.dart';
 //import 'package:flutter_native_timezone/flutter_timezone.dart';
 
@@ -76,6 +77,86 @@ class ToDoDataBase {
     categories = ["None", "Work", "Personal", "Study", "Others"];
     if (settings["timeZone"] == "") {
       //get local time zone
+    }
+  }
+
+  void saveToDoList() => _mybox.put("TODOLIST", toDoList);
+  void saveCategories() => _mybox.put("CATEGORIES", categories);
+  void saveSettings() => _mybox.put("SETTINGS", settings);
+  void saveAccountDetails() => _mybox.put("ACCOUNT", accountDetails);
+  void saveLocalCalTasks() => _mybox.put("LOCAL_CAL_TASKS", localCalTasks);
+  void saveGoogleCalTasks() => _mybox.put("GOOGLE_CAL_TASKS", googleCalTasks);
+  void saveOutlookCalTasks() =>
+      _mybox.put("OUTLOOK_CAL_TASKS", outlookCalTasks);
+  void saveSyncToCalendars() =>
+      _mybox.put("SYNC_TO_CALENDARS", syncToCalendars);
+
+  void saveViewOnlyCalendars() {
+    _mybox.put("VIEW_ONLY_CALENDARS", {
+      "local": viewOnlyCalendars["local"]!.toList(),
+      "google": viewOnlyCalendars["google"]!.toList(),
+      "outlook": viewOnlyCalendars["outlook"]!.toList(),
+    });
+  }
+
+  // ─── Load Methods ────────────────────────────────────────────────────────
+
+  void loadToDoList() {
+    final data = _mybox.get("TODOLIST");
+    if (data is List) {
+      toDoList = data.map((item) => item as List<dynamic>).toList();
+    }
+  }
+
+  void loadCategories() {
+    final data = _mybox.get("CATEGORIES");
+    if (data is List) categories = data.cast<String>();
+  }
+
+  void loadSettings() {
+    final data = _mybox.get("SETTINGS");
+    if (data is Map)
+      settings = Map<String, dynamic>.from(data.cast<String, dynamic>());
+  }
+
+  void loadAccountDetails() {
+    final data = _mybox.get("ACCOUNT");
+    if (data is Map)
+      accountDetails = Map<String, dynamic>.from(data.cast<String, dynamic>());
+  }
+
+  void loadLocalCalTasks() {
+    final data = _mybox.get("LOCAL_CAL_TASKS");
+    if (data is List)
+      localCalTasks = data.map((item) => item as List<dynamic>).toList();
+  }
+
+  void loadGoogleCalTasks() {
+    final data = _mybox.get("GOOGLE_CAL_TASKS");
+    if (data is List)
+      googleCalTasks = data.map((item) => item as List<dynamic>).toList();
+  }
+
+  void loadOutlookCalTasks() {
+    final data = _mybox.get("OUTLOOK_CAL_TASKS");
+    if (data is List)
+      outlookCalTasks = data.map((item) => item as List<dynamic>).toList();
+  }
+
+  void loadSyncToCalendars() {
+    final data = _mybox.get("SYNC_TO_CALENDARS");
+    if (data is Map)
+      syncToCalendars = Map<String, dynamic>.from(data.cast<String, dynamic>());
+  }
+
+  void loadViewOnlyCalendars() {
+    final data = _mybox.get("VIEW_ONLY_CALENDARS");
+    if (data is Map) {
+      viewOnlyCalendars = {
+        "local": (data["local"] ?? []).cast<String>().toSet(),
+        "google": (data["google"] ?? []).cast<String>().toSet(),
+        "outlook": (data["outlook"] ?? []).cast<String>().toSet(),
+      };
     }
   }
 

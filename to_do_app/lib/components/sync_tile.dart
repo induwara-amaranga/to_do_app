@@ -79,7 +79,14 @@ class SyncTile extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    "DateTime",
+                    task[17],
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    "  date : ${task[3]} time : ${task[4]}",
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSecondary,
                       fontSize: 14,
