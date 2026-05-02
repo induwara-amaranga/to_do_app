@@ -110,7 +110,7 @@ class _MyPieChartState extends State<MyPieChart> {
             ),
           ),
         ),
-        SizedBox(width: 50),
+        Spacer(),
         Container(
           width: 100,
           height: 200,
@@ -126,7 +126,7 @@ class _MyPieChartState extends State<MyPieChart> {
                 child: Row(
                   children: [
                     Container(width: 10, height: 10, color: colors[index]),
-                    SizedBox(width: 20),
+                    Spacer(),
                     Text(widget.mappedPending.keys.toList()[index]),
                   ],
                 ),

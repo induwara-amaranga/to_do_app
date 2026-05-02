@@ -94,9 +94,9 @@ class RepeatTask {
       DateTime.now().toUtc().toString(), // createdAt
       id, // new unique ID
       task[13], // subtasks
-      "", //14 cal id
-      "", //15 event id
-      "", //16 local cal event id
+      task[14], //14 cal id
+      task[15], //15 event id
+      task[16], //16 local cal event id
       "repeat",
       "none",
       [],
@@ -245,9 +245,9 @@ class RepeatTask {
       DateTime.now().toUtc().toString(), // createdAt
       id,
       task[13],
-      "", //14 cal id
-      "", //15 event id
-      "", //16 local cal event id
+      task[14], //14 cal id
+      task[15], //15 event id
+      task[16], //16 local cal event id
       "repeat",
       "none",
       [],

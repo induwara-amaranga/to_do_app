@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:googleapis/cloudsearch/v1.dart';
+//import 'package:googleapis/cloudsearch/v1.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:to_do_app/components/create_task_sheet.dart';
+import 'package:to_do_app/components/sync_tile.dart';
+import 'package:to_do_app/components/task_page_bottom_nav_bar.dart';
 import 'package:to_do_app/components/task_tile.dart';
 import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/models/types.dart';
@@ -26,6 +28,7 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime selectedDay = DateTime.now();
   List<List<dynamic>> toDoList = [];
   List<List<dynamic>> tasksForSelectedDay = [];
+  List<List<dynamic>> calTasksForSelectedDay = [];
   late final ToDoDataBase db;
 
   bool _isStarred = false;
@@ -260,40 +263,71 @@ class _CalendarPageState extends State<CalendarPage> {
     db.updateDataBase();
   }
 
+  List<List<dynamic>> _getCalTasksForDay(DateTime day) {
+    return [
+      ...db.localCalTasks.where((t) => _isTaskOnDay(t, day)),
+      ...db.googleCalTasks.where((t) => _isTaskOnDay(t, day)),
+      ...db.outlookCalTasks.where((t) => _isTaskOnDay(t, day)),
+    ];
+  }
+
+  bool _isTaskOnDay(List<dynamic> task, DateTime day) {
+    if (task[3] == null || task[3] == "0000-00-00") return false;
+
+    final DateTime dueLocal = DateTimeUtilsHelper.toLocalUsingTz(
+      DateTimeUtilsHelper.combineDateAndTimeFromStrings(task[3], task[4]),
+    );
+
+    final sel = DateTime(day.year, day.month, day.day);
+    final due = DateTime(dueLocal.year, dueLocal.month, dueLocal.day);
+    print(
+      "----------------selected: $sel, due: $due, task: ${task[0]}, repeat: ${task[7]}, source: ${task[17]}",
+    );
+
+    // Always show on the exact due date
+    if (sel == due) return true;
+
+    // Completed tasks and non-repeating tasks only show on their due date
+    if (task[1] == true || task[7] == null || task[7] == "none") return false;
+
+    // Repeating incomplete tasks: selected day must be after the due date
+    if (sel.isBefore(due)) return false;
+
+    switch (task[7]) {
+      case 'daily':
+        return true;
+      case 'weekly':
+        return sel.weekday == due.weekday;
+      case 'monthly':
+        return sel.day == due.day;
+      case 'yearly':
+        return sel.month == due.month && sel.day == due.day;
+      default:
+        return false;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     db = widget.db;
     toDoList = widget.db.toDoList;
     tasksForSelectedDay =
-        toDoList.where((task) {
-          DateTime? dueDateUtc = DateTimeUtilsHelper.parseDate(task[3]);
-          DateTime? dueTimeUtc = DateTimeUtilsHelper.parseTime(task[4]);
-          //print("due date utc $dueDateUtc");
-          DateTime? dueDate;
-          if (dueDateUtc != null && dueTimeUtc != null) {
-            dueDate = DateTimeUtilsHelper.toLocalUsingTz(
-              DateTimeUtilsHelper.combineDateAndTimeFromStrings(
-                task[3],
-                task[4],
-              ),
-            );
-          }
-
-          if (dueDate != null) {
-            return dueDate!.year == selectedDay.year &&
-                dueDate!.month == selectedDay.month &&
-                dueDate!.day == selectedDay.day;
-          }
-          return false;
-        }).toList();
+        toDoList.where((task) => _isTaskOnDay(task, selectedDay)).toList();
+    calTasksForSelectedDay = _getCalTasksForDay(selectedDay);
   }
 
   @override
   Widget build(BuildContext context) {
     focusedDay = DateTime.now();
     return Scaffold(
-      appBar: AppBar(title: const Text('Calendar Page')),
+      bottomNavigationBar: TaskBottomNavBar(current: 0),
+      appBar: AppBar(
+        title: Text(
+          'Calendar',
+          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+        ),
+      ),
       body: Column(
         children: [
           Container(
@@ -355,32 +389,11 @@ class _CalendarPageState extends State<CalendarPage> {
                 setState(() {
                   this.selectedDay = selectedDay;
                   this.focusedDay = focusedDay;
-                  DateTime? dueDate;
                   tasksForSelectedDay =
-                      toDoList.where((task) {
-                        DateTime? dueDateUtc = DateTimeUtilsHelper.parseDate(
-                          task[3],
-                        );
-                        DateTime? dueTimeUtc = DateTimeUtilsHelper.parseTime(
-                          task[4],
-                        );
-                        //print("due date utc $dueDateUtc");
-                        if (dueDateUtc != null && dueTimeUtc != null) {
-                          dueDate = DateTimeUtilsHelper.toLocalUsingTz(
-                            DateTimeUtilsHelper.combineDateAndTimeFromStrings(
-                              task[3],
-                              task[4],
-                            ),
-                          );
-                        }
-
-                        if (dueDate != null) {
-                          return dueDate!.year == selectedDay.year &&
-                              dueDate!.month == selectedDay.month &&
-                              dueDate!.day == selectedDay.day;
-                        }
-                        return false;
-                      }).toList();
+                      toDoList
+                          .where((task) => _isTaskOnDay(task, selectedDay))
+                          .toList();
+                  calTasksForSelectedDay = _getCalTasksForDay(selectedDay);
                 });
               },
               selectedDayPredicate: (day) {
@@ -390,53 +403,88 @@ class _CalendarPageState extends State<CalendarPage> {
           ),
           SizedBox(height: 20),
           Expanded(
-            child: ListView.builder(
-              shrinkWrap: true,
-              itemCount: tasksForSelectedDay.length,
-              itemBuilder: (context, index) {
-                List<dynamic> task = tasksForSelectedDay[index];
-                return TaskTile(
-                  source: task[17],
-                  disableCompleted: () {
-                    setState(() {
-                      //isDuringAnimation = !isDuringAnimation;
-                    });
-                  },
-                  key: ValueKey('${task[0]}_${task[12]}_${task.toString()}'),
-                  initialSubtasks:
-                      task[13] != null
-                          ? (task[13] as List<dynamic>)
-                              .map((e) => Map<String, dynamic>.from(e as Map))
-                              .toList()
-                          : [],
-                  index: toDoList.indexOf(task),
-                  isStarred: task[10] == "true",
-                  taskName: task[0],
-                  taskCompleted: task[1],
-                  taskNote: task[2],
-                  dueDate: DateTimeUtilsHelper.parseDate(task[3]),
-                  dueTime:
-                      task[4] != "00:00"
-                          ? DateTimeUtilsHelper.parseTime(task[4])
-                          : null,
-                  taskCategory: task[5],
-                  taskPriority: task[6],
-                  repeatType: task[7],
-                  remainderAmount: task[8],
-                  remainderType: task[9],
-                  onChanged: (index, value) => checkBoxChanged(value, index),
-                  deleteFunction:
-                      (context) => deleteTask(toDoList.indexOf(task)),
-                  onEdit: (index, taskDetails) => editTask(index, taskDetails),
-                  repeatTypes: repeatTypes,
-                  priorityTypes: priorityTypes,
-                  remainderTypes: remainderTypes,
-                  categoryTypes: widget.db.categories,
-                );
-              },
+            child: ListView(
+              children: [
+                if (tasksForSelectedDay.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'Tasks',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ...tasksForSelectedDay.map((task) {
+                  return TaskTile(
+                    source: task[17],
+                    disableCompleted: () {
+                      setState(() {});
+                    },
+                    key: ValueKey('${task[0]}_${task[12]}_${task.toString()}'),
+                    initialSubtasks:
+                        task[13] != null
+                            ? (task[13] as List<dynamic>)
+                                .map((e) => Map<String, dynamic>.from(e as Map))
+                                .toList()
+                            : [],
+                    index: toDoList.indexOf(task),
+                    isStarred: task[10] == "true",
+                    taskName: task[0],
+                    taskCompleted: task[1],
+                    taskNote: task[2],
+                    dueDate: DateTimeUtilsHelper.parseDate(task[3]),
+                    dueTime:
+                        task[4] != "00:00"
+                            ? DateTimeUtilsHelper.parseTime(task[4])
+                            : null,
+                    taskCategory: task[5],
+                    taskPriority: task[6],
+                    repeatType: task[7],
+                    remainderAmount: task[8],
+                    remainderType: task[9],
+                    onChanged: (index, value) => checkBoxChanged(value, index),
+                    deleteFunction:
+                        (context) => deleteTask(toDoList.indexOf(task)),
+                    onEdit:
+                        (index, taskDetails) => editTask(index, taskDetails),
+                    repeatTypes: repeatTypes,
+                    priorityTypes: priorityTypes,
+                    remainderTypes: remainderTypes,
+                    categoryTypes: widget.db.categories,
+                  );
+                }),
+                if (calTasksForSelectedDay.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: Text(
+                      'Calendar Events ${calTasksForSelectedDay.length > 1 ? "(${calTasksForSelectedDay.length})" : ""}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                ...calTasksForSelectedDay.map(
+                  (task) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    child: SyncTile(task: task),
+                  ),
+                ),
+              ],
             ),
           ),
-          SizedBox(height: 30),
+          //SizedBox(height: 30),
         ],
       ),
       floatingActionButton: Container(

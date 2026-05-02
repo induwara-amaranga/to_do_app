@@ -273,7 +273,7 @@ class LocalCalendarService {
         'dueTime': dueTime,
         'taskCategory': 'None',
         'taskPriority': 'Low',
-        'repeatType': 'none',
+        'repeatType': _repeatTypeFromRule(event.recurrenceRule),
         'remainderAmount': 10,
         'remainderType': 'none',
         'isStarred': false,
@@ -546,15 +546,13 @@ class LocalCalendarService {
     for (final event in deduplicatedEvents) {
       if (event.start == null) continue;
 
-      // Parse start time into date/time strings
-      final _start = event.start!;
-      print("start cal$_start");
-      DateTime start = DateTimeUtilsHelper.toUtcUsingLocal(_start);
-      start = DateTimeUtilsHelper.toUtcUsingLocal(start);
-      print("Start utc $start");
-      final parts = start.toIso8601String().split('T');
-      final dueDate = parts.first;
-      final dueTime = parts.length > 1 ? parts[1] : '00:00:00';
+      // Convert event start to UTC; strip milliseconds/Z from time part
+      final startUtc = DateTimeUtilsHelper.toUtcUsingLocal(event.start!);
+      final isoParts = startUtc.toIso8601String().split('T');
+      final dueDate = isoParts.first;
+      final dueTime = isoParts.length > 1
+          ? isoParts[1].split('.').first.replaceAll('Z', '')
+          : '00:00:00';
 
       final taskDetails = {
         'taskName': event.title ?? 'Untitled Event',
@@ -563,7 +561,7 @@ class LocalCalendarService {
         'dueTime': dueTime,
         'taskCategory': 'None',
         'taskPriority': 'Low',
-        'repeatType': 'none',
+        'repeatType': _repeatTypeFromRule(event.recurrenceRule),
         'remainderAmount': 10,
         'remainderType': 'none',
         'isStarred': false,
@@ -572,31 +570,18 @@ class LocalCalendarService {
         'calendarId': event.calendarId,
         'eventId': event.eventId,
       };
-      //print("--------------------------> ${db.localCalTasks}");
 
       // Find if this event already exists
-      final existingIndex = db.localCalTasks.indexWhere((task) {
-        //print("${task[16]} == ${event.eventId}");
-
-        return task.length > 15 && task[16] == event.eventId;
-      });
-
-      final combined = DateTimeUtilsHelper.combineDateAndTime(
-        DateTimeUtilsHelper.parseDate(taskDetails['dueDate']),
-
-        DateTimeUtilsHelper.parseDate(taskDetails['dueTime']),
+      final existingIndex = db.localCalTasks.indexWhere(
+        (task) => task.length > 15 && task[16] == event.eventId,
       );
-      final utcTime = DateTimeUtilsHelper.toUtcUsingLocal(combined);
+
       if (existingIndex != -1) {
         // Update existing task
         db.localCalTasks[existingIndex][0] = taskDetails['taskName'];
         db.localCalTasks[existingIndex][2] = taskDetails['taskNote'];
-        db.localCalTasks[existingIndex][3] = DateTimeUtilsHelper.formatDate(
-          utcTime,
-        );
-        db.localCalTasks[existingIndex][4] = DateTimeUtilsHelper.formatTime(
-          utcTime,
-        );
+        db.localCalTasks[existingIndex][3] = dueDate;
+        db.localCalTasks[existingIndex][4] = dueTime;
         db.localCalTasks[existingIndex][5] = taskDetails['taskCategory'];
         db.localCalTasks[existingIndex][6] = taskDetails['taskPriority'];
         db.localCalTasks[existingIndex][7] = taskDetails['repeatType'];
@@ -614,8 +599,8 @@ class LocalCalendarService {
         taskDetails['taskName'],
         false,
         taskDetails['taskNote'],
-        DateTimeUtilsHelper.formatDate(utcTime),
-        DateTimeUtilsHelper.formatTime(utcTime),
+        dueDate,
+        dueTime,
         taskDetails['taskCategory'],
         taskDetails['taskPriority'],
         taskDetails['repeatType'],
@@ -625,11 +610,11 @@ class LocalCalendarService {
         taskDetails['createdAt'],
         uuid.v4(),
         taskDetails['subTasks'],
-        taskDetails['calendarId'], // store calendar ID
+        taskDetails['calendarId'],
         taskDetails['eventId'],
         taskDetails['eventId'],
         "local",
-        "none", //18 completed at
+        "none",
       ]);
 
       importedCount++;
@@ -642,6 +627,22 @@ class LocalCalendarService {
     print(
       '✅ Imported $importedCount new events, updated $updatedCount existing ones.',
     );
+  }
+
+  static String _repeatTypeFromRule(RecurrenceRule? rule) {
+    if (rule == null) return 'none';
+    switch (rule.recurrenceFrequency) {
+      case RecurrenceFrequency.Daily:
+        return 'daily';
+      case RecurrenceFrequency.Weekly:
+        return 'weekly';
+      case RecurrenceFrequency.Monthly:
+        return 'monthly';
+      case RecurrenceFrequency.Yearly:
+        return 'yearly';
+      default:
+        return 'none';
+    }
   }
 
   static RecurrenceRule? _buildRecurrenceRule(String? repeatType) {

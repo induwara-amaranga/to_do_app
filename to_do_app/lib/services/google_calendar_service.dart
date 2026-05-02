@@ -422,8 +422,8 @@ class GoogleCalendarService {
       // }
       // if (start == null) continue; // skip if we can't get a start time
 
-      final startRaw = event.start!.dateTime ?? event.start!.date?.toLocal();
-      DateTime start = DateTimeUtilsHelper.toUtcUsingLocal(startRaw);
+      final startRaw = event.start!.dateTime ?? event.start!.date;
+      final start = startRaw!.toUtc();
       final parts = start.toIso8601String().split('T');
       final dueDate = parts.first;
       final dueTime = parts.length > 1 ? parts[1].split('.')[0] : '00:00:00';
@@ -457,22 +457,12 @@ class GoogleCalendarService {
             (task[14] == calendarId && task[16] == event.id),
       );
 
-      final combined = DateTimeUtilsHelper.combineDateAndTime(
-        DateTimeUtilsHelper.parseDate(taskDetails['dueDate']),
-        DateTimeUtilsHelper.parseDate(taskDetails['dueTime']),
-      );
-      final utcTime = DateTimeUtilsHelper.toUtcUsingLocal(combined);
-
       if (existingIndex != -1) {
         // Update existing task
         db.googleCalTasks[existingIndex][0] = taskDetails['taskName'];
         db.googleCalTasks[existingIndex][2] = taskDetails['taskNote'];
-        db.googleCalTasks[existingIndex][3] = DateTimeUtilsHelper.formatDate(
-          utcTime,
-        );
-        db.googleCalTasks[existingIndex][4] = DateTimeUtilsHelper.formatTime(
-          utcTime,
-        );
+        db.googleCalTasks[existingIndex][3] = dueDate;
+        db.googleCalTasks[existingIndex][4] = dueTime;
         db.googleCalTasks[existingIndex][5] = taskDetails['taskCategory'];
         db.googleCalTasks[existingIndex][6] = taskDetails['taskPriority'];
         db.googleCalTasks[existingIndex][7] = taskDetails['repeatType'];
@@ -491,8 +481,8 @@ class GoogleCalendarService {
         taskDetails['taskName'],
         false,
         taskDetails['taskNote'],
-        DateTimeUtilsHelper.formatDate(utcTime),
-        DateTimeUtilsHelper.formatTime(utcTime),
+        dueDate,
+        dueTime,
         taskDetails['taskCategory'],
         taskDetails['taskPriority'],
         taskDetails['repeatType'],

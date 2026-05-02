@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:to_do_app/pages/task_page.dart';
+//import 'package:to_do_app/pages/task_page.dart';
 
 class TaskBottomNavBar extends StatefulWidget {
-  const TaskBottomNavBar({super.key});
+  const TaskBottomNavBar({super.key, required this.current});
+
+  final int current;
 
   @override
   State<TaskBottomNavBar> createState() => _BottomNavBarState();
 }
 
 class _BottomNavBarState extends State<TaskBottomNavBar> {
+  late int current;
+  @override
+  void initState() {
+    super.initState();
+    current = widget.current;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BottomNavigationBar(
@@ -23,7 +32,7 @@ class _BottomNavBarState extends State<TaskBottomNavBar> {
           label: 'Statistics',
         ),
       ],
-      currentIndex: 1,
+      currentIndex: current,
 
       selectedItemColor: Theme.of(context).colorScheme.primary,
       unselectedItemColor: Theme.of(

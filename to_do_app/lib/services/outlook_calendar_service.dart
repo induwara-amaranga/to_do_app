@@ -298,7 +298,7 @@ class OutlookCalendarService {
 
     // Microsoft Graph endpoint
     final url = Uri.parse(
-      "https://graph.microsoft.com/v1.0/me/calendars/$calendarId/events",
+      "https://graph.microsoft.com/v1.0/me/calendars/$calendarId/events?\$select=id,subject,bodyPreview,start,end,recurrence,type,seriesMasterId",
     );
 
     final response = await http.get(
@@ -314,6 +314,17 @@ class OutlookCalendarService {
     final data = jsonDecode(response.body);
     final events = List<Map<String, dynamic>>.from(data['value']);
     print('📅 Found ${events.length} events in Outlook');
+
+    // Pre-fetch recurrence for occurrence instances (recurrence is only on the master)
+    final Map<String, String> masterRepeatTypeCache = {};
+    for (final e in events) {
+      final masterId = e['seriesMasterId'] as String?;
+      if (masterId != null && !masterRepeatTypeCache.containsKey(masterId)) {
+        masterRepeatTypeCache[masterId] = await _fetchMasterRepeatType(
+          masterId,
+        );
+      }
+    }
 
     int importedCount = 0;
     int updatedCount = 0;
@@ -336,6 +347,13 @@ class OutlookCalendarService {
         (t) => t.length > 15 && t[16][2] == eventId && t[14] == calendarId,
       );
 
+      final repeatType =
+          e['recurrence'] != null
+              ? _repeatTypeFromRecurrence(
+                e['recurrence'] as Map<String, dynamic>?,
+              )
+              : masterRepeatTypeCache[e['seriesMasterId']] ?? 'none';
+
       if (existingIndex != -1) {
         // ✏️ Update existing record
         db.toDoList[existingIndex][0] = e['subject'] ?? 'Untitled Event';
@@ -344,7 +362,7 @@ class OutlookCalendarService {
         db.toDoList[existingIndex][4] = dueTime;
         db.toDoList[existingIndex][5] = 'None';
         db.toDoList[existingIndex][6] = 'Low';
-        db.toDoList[existingIndex][7] = 'none';
+        db.toDoList[existingIndex][7] = repeatType;
         db.toDoList[existingIndex][8] = 10;
         db.toDoList[existingIndex][9] = 'none';
         db.toDoList[existingIndex][10] = false;
@@ -362,7 +380,7 @@ class OutlookCalendarService {
         dueTime, // 4
         'None', // 5: category
         'Low', // 6: priority
-        'none', // 7: repeat
+        repeatType, // 7: repeat
         10, // 8: reminder amount
         'none', // 9: reminder type
         false, // 10: starred
@@ -403,7 +421,7 @@ class OutlookCalendarService {
 
     // Fetch events
     final url = Uri.parse(
-      "https://graph.microsoft.com/v1.0/me/calendars/$calendarId/events",
+      "https://graph.microsoft.com/v1.0/me/calendars/$calendarId/events?\$select=id,subject,bodyPreview,start,end,recurrence,type,seriesMasterId",
     );
 
     final response = await http.get(
@@ -420,6 +438,17 @@ class OutlookCalendarService {
     final events = List<Map<String, dynamic>>.from(data['value']);
 
     print('📅 Found ${events.length} view-only events.');
+
+    // Pre-fetch recurrence for occurrence instances (recurrence is only on the master)
+    final Map<String, String> masterRepeatTypeCache = {};
+    for (final e in events) {
+      final masterId = e['seriesMasterId'] as String?;
+      if (masterId != null && !masterRepeatTypeCache.containsKey(masterId)) {
+        masterRepeatTypeCache[masterId] = await _fetchMasterRepeatType(
+          masterId,
+        );
+      }
+    }
 
     int importedCount = 0;
     int updatedCount = 0;
@@ -448,6 +477,13 @@ class OutlookCalendarService {
         (t) => t.length > 15 && (t[15] == eventId && t[14] == calendarId),
       );
 
+      final repeatType =
+          e['recurrence'] != null
+              ? _repeatTypeFromRecurrence(
+                e['recurrence'] as Map<String, dynamic>?,
+              )
+              : masterRepeatTypeCache[e['seriesMasterId']] ?? 'none';
+
       if (existingIndex != -1) {
         // ✏️ Update existing record
         db.outlookCalTasks[existingIndex][0] = e['subject'] ?? 'Untitled Event';
@@ -456,7 +492,7 @@ class OutlookCalendarService {
         db.outlookCalTasks[existingIndex][4] = dueTime;
         db.outlookCalTasks[existingIndex][5] = 'None';
         db.outlookCalTasks[existingIndex][6] = 'Low';
-        db.outlookCalTasks[existingIndex][7] = 'none';
+        db.outlookCalTasks[existingIndex][7] = repeatType;
         db.outlookCalTasks[existingIndex][8] = 10;
         db.outlookCalTasks[existingIndex][9] = 'none';
         db.outlookCalTasks[existingIndex][10] = false;
@@ -472,9 +508,9 @@ class OutlookCalendarService {
         e['bodyPreview'] ?? '', // 2: note
         dueDate, // 3
         dueTime, // 4
-        'View Only', // 5: category
+        'None', // 5: category
         'Low', // 6: priority
-        'none', // 7: repeat
+        repeatType, // 7: repeat
         10, // 8: reminder
         'none', // 9: reminder type
         false, // 10: starred
@@ -527,6 +563,47 @@ class OutlookCalendarService {
       await importViewOnlyEventsToDB(calID, db);
     } catch (e) {
       print("Sync from error $e");
+    }
+  }
+
+  static Future<String> _fetchMasterRepeatType(String masterId) async {
+    try {
+      final url = Uri.parse(
+        "https://graph.microsoft.com/v1.0/me/events/$masterId?\$select=recurrence",
+      );
+      final response = await http.get(
+        url,
+        headers: {"Authorization": "Bearer $_accessToken"},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return _repeatTypeFromRecurrence(
+          data['recurrence'] as Map<String, dynamic>?,
+        );
+      }
+    } catch (e) {
+      print('Failed to fetch master event recurrence: $e');
+    }
+    return 'none';
+  }
+
+  static String _repeatTypeFromRecurrence(Map<String, dynamic>? recurrence) {
+    print("Determining repeat type from recurrence: $recurrence");
+    if (recurrence == null) return 'none';
+    final type = recurrence['pattern']?['type'] as String?;
+    switch (type?.toLowerCase()) {
+      case 'daily':
+        return 'daily';
+      case 'weekly':
+        return 'weekly';
+      case 'absolutemonthly':
+      case 'relativemonthly':
+        return 'monthly';
+      case 'absoluteyearly':
+      case 'relativeyearly':
+        return 'yearly';
+      default:
+        return 'none';
     }
   }
 

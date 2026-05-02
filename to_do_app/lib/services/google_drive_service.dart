@@ -19,7 +19,7 @@ class GoogleDriveService {
   //   ],
   // );
 
-  static final drive.DriveApi? _driveApi=GoogleAuthService.driveApi;
+  static final drive.DriveApi? _driveApi = GoogleAuthService.driveApi;
   GoogleSignInAccount? _account;
   static GoogleSignInAccount? account;
 

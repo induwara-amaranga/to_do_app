@@ -485,7 +485,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
       ),
 
       key: _scaffoldKey, // assign the key to this Scaffold
-      bottomNavigationBar: const TaskBottomNavBar(),
+      bottomNavigationBar: const TaskBottomNavBar(current: 1),
       body: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -730,25 +730,6 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
       showCompletedTasks,
     );
 
-    //groupe calendar tasks
-    Map<String, List> groupedLocalCalTasks = GroupTasksService.groupTasksByMode(
-      db.localCalTasks.cast<List<dynamic>>(),
-      grouping,
-      showCompletedTasks,
-    );
-    Map<String, List> groupedGoogleCalTasks =
-        GroupTasksService.groupTasksByMode(
-          db.googleCalTasks.cast<List<dynamic>>(),
-          grouping,
-          showCompletedTasks,
-        );
-    Map<String, List> groupedOutlookCalTasks =
-        GroupTasksService.groupTasksByMode(
-          db.outlookCalTasks.cast<List<dynamic>>(),
-          grouping,
-          showCompletedTasks,
-        );
-
     // State for expanded groups
     final Map<String, bool> expandedGroups = {
       "today": true,
@@ -792,6 +773,11 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                       context,
                     ).copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
+                      childrenPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      expandedCrossAxisAlignment: CrossAxisAlignment.start,
                       initiallyExpanded: isExpanded,
                       title: Text(
                         groupKey.toUpperCase(),
@@ -806,16 +792,14 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                           ),
 
                       children: [
-                        ...groupedLocalCalTasks[groupKey]!.map(
-                          (e) => SyncTile(task: e),
+                        Text(
+                          'Tasks',
+                          textAlign: TextAlign.start,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                         ),
-                        ...groupedGoogleCalTasks[groupKey]!.map(
-                          (e) => SyncTile(task: e),
-                        ),
-                        ...groupedOutlookCalTasks[groupKey]!.map(
-                          (e) => SyncTile(task: e),
-                        ),
-
                         if (groupTasks.isEmpty)
                           const Padding(
                             padding: EdgeInsets.all(16.0),
@@ -909,6 +893,41 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                               );
                             },
                           ),
+
+                        if (groupKey == "today")
+                          Column(
+                            children: [
+                              SizedBox(height: 16),
+                              Text(
+                                'Calendar Events',
+                                textAlign: TextAlign.start,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          SizedBox.shrink(),
+                        if (groupKey == "today" && !showCompletedTasks)
+                          ...db.localCalTasks
+                              .where(_isCalEventForToday)
+                              .map((e) => SyncTile(task: e))
+                        else
+                          SizedBox.shrink(),
+                        if (groupKey == "today" && !showCompletedTasks)
+                          ...db.googleCalTasks
+                              .where(_isCalEventForToday)
+                              .map((e) => SyncTile(task: e))
+                        else
+                          SizedBox.shrink(),
+                        if (groupKey == "today" && !showCompletedTasks)
+                          ...db.outlookCalTasks
+                              .where(_isCalEventForToday)
+                              .map((e) => SyncTile(task: e))
+                        else
+                          SizedBox.shrink(),
                         SizedBox(height: 30),
                       ],
                     ),
@@ -918,6 +937,31 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
             );
           }).toList(),
     );
+  }
+
+  bool _isCalEventForToday(List<dynamic> task) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final storedDate = DateTimeUtilsHelper.parseDate(task[3] as String?);
+    if (storedDate == null) return false;
+    final storedDay = DateTime(
+      storedDate.year,
+      storedDate.month,
+      storedDate.day,
+    );
+    if (storedDay.isAfter(today)) return false;
+    switch ((task[7] as String?)?.toLowerCase() ?? 'none') {
+      case 'daily':
+        return true;
+      case 'weekly':
+        return storedDate.weekday == now.weekday;
+      case 'monthly':
+        return storedDate.day == now.day;
+      case 'yearly':
+        return storedDate.month == now.month && storedDate.day == now.day;
+      default:
+        return storedDay.isAtSameMomentAs(today);
+    }
   }
 
   Map<String, List<List<dynamic>>> getUpcomingTasksWithinHotPeriod(
