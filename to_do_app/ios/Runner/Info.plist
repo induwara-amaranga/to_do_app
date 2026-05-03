@@ -4,6 +4,8 @@
 <dict>
 	<key>NSCalendarsUsageDescription</key>
 	<string>This app needs access to your calendar to sync events.</string>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>This app uses notifications to remind you about upcoming tasks and deadlines.</string>
 
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>

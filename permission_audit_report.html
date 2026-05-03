@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Permission Audit Report – To-Do App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 13px;
+      color: #1a1a2e;
+      background: #fff;
+      padding: 40px 50px;
+      max-width: 960px;
+      margin: auto;
+    }
+
+    /* ── Cover header ── */
+    .cover {
+      border-bottom: 3px solid #4f46e5;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    .cover h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1e1b4b;
+      margin-bottom: 6px;
+    }
+    .cover .subtitle {
+      font-size: 14px;
+      color: #6b7280;
+    }
+    .cover .meta {
+      margin-top: 12px;
+      display: flex;
+      gap: 32px;
+      font-size: 12px;
+      color: #6b7280;
+    }
+    .cover .meta span strong { color: #1a1a2e; }
+
+    /* ── Section titles ── */
+    h2 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #1e1b4b;
+      border-left: 4px solid #4f46e5;
+      padding-left: 10px;
+      margin: 28px 0 12px;
+    }
+    h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+      margin: 16px 0 6px;
+    }
+
+    /* ── Verdict badges ── */
+    .badge {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+    .badge-good   { background: #d1fae5; color: #065f46; }
+    .badge-warn   { background: #fef3c7; color: #92400e; }
+    .badge-bad    { background: #fee2e2; color: #991b1b; }
+    .badge-bug    { background: #fce7f3; color: #9d174d; }
+
+    /* ── Summary table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    thead tr { background: #1e1b4b; color: #fff; }
+    thead th { padding: 8px 10px; text-align: left; }
+    tbody tr:nth-child(even) { background: #f5f5ff; }
+    tbody td { padding: 7px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+
+    /* ── Code blocks ── */
+    pre {
+      background: #1e1b4b;
+      color: #e0e7ff;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      overflow-x: auto;
+      margin: 8px 0 14px;
+      line-height: 1.6;
+    }
+    code {
+      background: #ede9fe;
+      color: #4c1d95;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-size: 11.5px;
+      font-family: 'Consolas', 'Courier New', monospace;
+    }
+
+    /* ── Lists ── */
+    ul, ol { padding-left: 20px; margin: 6px 0 10px; }
+    li { margin-bottom: 5px; line-height: 1.6; }
+
+    /* ── Callout boxes ── */
+    .callout {
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin: 10px 0 14px;
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+    .callout-green { background: #d1fae5; border-left: 4px solid #10b981; }
+    .callout-red   { background: #fee2e2; border-left: 4px solid #ef4444; }
+    .callout-yellow{ background: #fef3c7; border-left: 4px solid #f59e0b; }
+    .callout-blue  { background: #dbeafe; border-left: 4px solid #3b82f6; }
+
+    /* ── Priority table ── */
+    .priority-table td:first-child { font-weight: 600; width: 120px; }
+    .p1 { color: #991b1b; }
+    .p2 { color: #92400e; }
+    .p3 { color: #065f46; }
+
+    /* ── Print ── */
+    @media print {
+      body { padding: 20px 30px; }
+      pre  { white-space: pre-wrap; word-break: break-word; }
+      h2   { page-break-before: auto; }
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid #e5e7eb;
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ COVER ═══════════ -->
+<div class="cover">
+  <h1>Permission Audit Report</h1>
+  <div class="subtitle">Flutter To-Do App &mdash; Calendar &amp; Notification Permissions</div>
+  <div class="meta">
+    <span><strong>Date:</strong> May 2026</span>
+    <span><strong>Platform:</strong> Android &amp; iOS</span>
+    <span><strong>Packages:</strong> device_calendar 4.3.3 &nbsp;|&nbsp; flutter_local_notifications 17.2.2 &nbsp;|&nbsp; permission_handler 12.0.1</span>
+  </div>
+</div>
+
+
+<!-- ═══════════ 1. EXECUTIVE SUMMARY ═══════════ -->
+<h2>1. Executive Summary</h2>
+<p>
+  The app's permission infrastructure follows the <em>correct conceptual pipeline</em>
+  (check → request → handle denial → redirect to Settings). Most of the core
+  building blocks exist. However, several gaps &mdash; a broken Settings redirect,
+  no rationale dialogs, and eager notification prompts &mdash; put the app below
+  industry standard and will negatively affect grant rates and App Store review.
+</p>
+
+<div class="callout callout-yellow" style="margin-top:14px;">
+  <strong>Overall verdict:</strong> Partially compliant. Functional for happy-path users,
+  but denial recovery is partially broken and no rationale context is shown to users.
+</div>
+
+
+<!-- ═══════════ 2. PIPELINE OVERVIEW ═══════════ -->
+<h2>2. Standard Permission Pipeline vs. Current Implementation</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Pipeline Step</th>
+      <th>Industry Standard</th>
+      <th>Calendar</th>
+      <th>Notifications</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Check status before requesting</td>
+      <td>Always check first</td>
+      <td><span class="badge badge-good">Done</span></td>
+      <td><span class="badge badge-good">Done</span></td>
+    </tr>
+    <tr>
+      <td>Show in-app rationale dialog</td>
+      <td>Required on Android 12+, recommended everywhere</td>
+      <td><span class="badge badge-bad">Missing</span></td>
+      <td><span class="badge badge-bad">Missing</span></td>
+    </tr>
+    <tr>
+      <td>Trigger OS permission prompt</td>
+      <td>Only after rationale is accepted</td>
+      <td><span class="badge badge-good">Done</span></td>
+      <td><span class="badge badge-good">Done</span></td>
+    </tr>
+    <tr>
+      <td>Handle denial gracefully</td>
+      <td>Silent fallback, no crash</td>
+      <td><span class="badge badge-good">Done</span></td>
+      <td><span class="badge badge-good">Done</span></td>
+    </tr>
+    <tr>
+      <td>Detect permanent denial</td>
+      <td>Distinguish denied vs. permanentlyDenied</td>
+      <td><span class="badge badge-warn">Partial</span></td>
+      <td><span class="badge badge-good">Done</span></td>
+    </tr>
+    <tr>
+      <td>Redirect to Settings on permanent denial</td>
+      <td>Call openAppSettings() with explanation</td>
+      <td><span class="badge badge-warn">N/A</span></td>
+      <td><span class="badge badge-bug">Broken</span></td>
+    </tr>
+    <tr>
+      <td>Surface error to user in UI</td>
+      <td>Banner / SnackBar with recovery CTA</td>
+      <td><span class="badge badge-bad">Missing</span></td>
+      <td><span class="badge badge-bad">Missing</span></td>
+    </tr>
+    <tr>
+      <td>Deferred request (ask at point of need)</td>
+      <td>Never ask on cold launch</td>
+      <td><span class="badge badge-good">Done</span></td>
+      <td><span class="badge badge-bad">Eager (cold launch)</span></td>
+    </tr>
+    <tr>
+      <td>Android Manifest declarations</td>
+      <td>All runtime permissions declared</td>
+      <td><span class="badge badge-good">Done</span></td>
+      <td><span class="badge badge-good">Done</span></td>
+    </tr>
+    <tr>
+      <td>iOS Info.plist usage descriptions</td>
+      <td>Required for every sensitive capability</td>
+      <td><span class="badge badge-good">Done</span></td>
+      <td><span class="badge badge-bad">Missing</span></td>
+    </tr>
+  </tbody>
+</table>
+
+
+<hr class="section-divider"/>
+<!-- ═══════════ 3. CALENDAR PERMISSIONS ═══════════ -->
+<h2>3. Calendar Permissions</h2>
+
+<h3>3.1 How It Works Today</h3>
+<p>
+  Calendar permission is managed entirely through the <code>device_calendar</code> plugin
+  inside <code>LocalCalendarService.getCalendars()</code>.
+  The check-then-request pattern is correct:
+</p>
+<pre>
+var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
+if (!permissionsGranted.isSuccess || permissionsGranted.data == false) {
+  permissionsGranted = await _deviceCalendarPlugin.requestPermissions();
+}
+
+if (permissionsGranted.isSuccess &amp;&amp; permissionsGranted.data == true) {
+  final calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+  return calendarsResult.data ?? [];
+} else {
+  print('**Calendar permissions not granted**'); // silent – user sees nothing
+}
+</pre>
+
+<div class="callout callout-green">
+  <strong>Good:</strong> Permission is checked lazily (only when the calendar screen is
+  opened), not at app launch. This is the correct deferred pattern.
+</div>
+
+<h3>3.2 Issues Found</h3>
+
+<div class="callout callout-red">
+  <strong>No rationale dialog.</strong> The OS prompt appears with no prior context.
+  Users who tap "Deny" can never be prompted again via code.
+</div>
+
+<div class="callout callout-yellow">
+  <strong>Silent failure.</strong> When denied, <code>getCalendars()</code> returns an
+  empty list and prints to the console. The user sees an empty calendar picker with
+  no explanation &mdash; they cannot tell if the list is empty by choice or because
+  access was blocked.
+</div>
+
+<div class="callout callout-yellow">
+  <strong>No permanent-denial recovery for calendar.</strong> Unlike notifications,
+  there is no code path that detects a permanently-denied calendar permission and
+  redirects to device Settings.
+</div>
+
+<h3>3.3 Android Manifest (Calendar)</h3>
+<pre>
+&lt;uses-permission android:name="android.permission.READ_CALENDAR"/&gt;
+&lt;uses-permission android:name="android.permission.WRITE_CALENDAR"/&gt;
+</pre>
+<p><span class="badge badge-good">Correct</span> Both required permissions are declared.</p>
+
+<h3>3.4 iOS Info.plist (Calendar)</h3>
+<pre>
+&lt;key&gt;NSCalendarsUsageDescription&lt;/key&gt;
+&lt;string&gt;This app needs access to your calendar to sync events.&lt;/string&gt;
+</pre>
+<p><span class="badge badge-good">Correct</span> Usage description is present and descriptive.</p>
+
+
+<hr class="section-divider"/>
+<!-- ═══════════ 4. NOTIFICATION PERMISSIONS ═══════════ -->
+<h2>4. Notification Permissions</h2>
+
+<h3>4.1 How It Works Today</h3>
+<p>
+  Notification permissions are initialised in <code>main.dart</code> at cold launch
+  and handled by <code>NotificationService</code>. The flow covers both Android and iOS:
+</p>
+<pre>
+// Android
+final bool? result = await _notifications
+    .resolvePlatformSpecificImplementation&lt;
+      AndroidFlutterLocalNotificationsPlugin&gt;()
+    ?.requestNotificationsPermission();
+
+// Also requests exact alarm permission (Android 12+)
+final bool? exactAlarmGranted = await _notifications
+    .resolvePlatformSpecificImplementation&lt;
+      AndroidFlutterLocalNotificationsPlugin&gt;()
+    ?.requestExactAlarmsPermission();
+
+// iOS
+final bool? result = await _notifications
+    .resolvePlatformSpecificImplementation&lt;
+      IOSFlutterLocalNotificationsPlugin&gt;()
+    ?.requestPermissions(alert: true, badge: true, sound: true);
+</pre>
+
+<p>A permission guard is also present before scheduling:</p>
+<pre>
+final bool hasPermission = await isNotificationPermissionGranted();
+if (!hasPermission) {
+  final bool granted = await requestNotificationPermission();
+  if (!granted) {
+    print("❌ Permission denied. Notification not scheduled.");
+    return; // graceful fallback – correct
+  }
+}
+</pre>
+
+<div class="callout callout-green">
+  <strong>Good:</strong> Exact alarm permission (<code>SCHEDULE_EXACT_ALARM</code>) is
+  handled separately for Android 12+. Many apps miss this and silently deliver
+  inexact alarms. Boot receiver is also configured so notifications survive restarts.
+</div>
+
+<h3>4.2 Issues Found</h3>
+
+<div class="callout callout-red">
+  <strong>Bug – Settings redirect is broken.</strong>
+  <code>request_permissions.dart</code> calls <code>openAppSettings()</code> for
+  permanently-denied notifications, but the function is never imported. The call
+  silently does nothing, leaving users with no recovery path.
+</div>
+
+<div class="callout callout-red">
+  <strong>Eager permission request.</strong>
+  <code>NotificationService.init()</code> fires in <code>main.dart</code> before the
+  user has seen any value from the app. Studies show cold-launch permission prompts
+  are denied 40-60% more often than context-aware prompts. This should be deferred
+  to the first time the user sets a reminder on a task.
+</div>
+
+<div class="callout callout-yellow">
+  <strong>No rationale dialog for notifications.</strong> Same issue as calendar &mdash;
+  the OS prompt fires with no preceding explanation.
+</div>
+
+<div class="callout callout-red">
+  <strong>Missing iOS Info.plist entry for notifications.</strong>
+  <code>NSCalendarsUsageDescription</code> exists but there is no notification
+  usage description. While iOS 10+ does not strictly require a plist key for
+  notifications (the system prompt handles it), Apple App Store review guidelines
+  expect a description for every sensitive capability the app uses.
+</div>
+
+<h3>4.3 Android Manifest (Notifications)</h3>
+<pre>
+&lt;uses-permission android:name="android.permission.POST_NOTIFICATIONS"/&gt;
+&lt;uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/&gt;
+&lt;uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/&gt;
+&lt;uses-permission android:name="android.permission.VIBRATE"/&gt;
+&lt;uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/&gt;
+&lt;uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/&gt;
+</pre>
+<p><span class="badge badge-good">Correct</span> All required notification permissions declared.</p>
+
+
+<hr class="section-divider"/>
+<!-- ═══════════ 5. DENIAL RECOVERY ANALYSIS ═══════════ -->
+<h2>5. Denial Recovery Architecture</h2>
+
+<p>
+  <code>permission_handler.dart</code> defines an enum and provider that correctly
+  models the three states Android exposes:
+</p>
+<pre>
+enum EnNotificationPermission { granted, denied, permanentlyDenied, unknown }
+</pre>
+
+<p>
+  <code>request_permissions.dart</code> branches on this enum:
+</p>
+<pre>
+if (_permissionHandler.notificationPermission == EnNotificationPermission.denied) {
+  await NotificationService.requestNotificationPermission();
+} else if (_permissionHandler.notificationPermission ==
+           EnNotificationPermission.permanentlyDenied) {
+  openAppSettings();  // ← import missing – this line does nothing
+}
+</pre>
+
+<div class="callout callout-blue">
+  <strong>Architecture is correct.</strong> The three-state model (granted / denied /
+  permanentlyDenied) is exactly what industry guides recommend. The only issue is
+  the missing import that makes the <code>openAppSettings()</code> call a no-op.
+  Adding <code>import 'package:permission_handler/permission_handler.dart';</code>
+  would fix it.
+</div>
+
+
+<hr class="section-divider"/>
+<!-- ═══════════ 6. RECOMMENDED IMPROVEMENTS ═══════════ -->
+<h2>6. Recommended Improvements (Priority Order)</h2>
+
+<table class="priority-table">
+  <thead>
+    <tr>
+      <th>Priority</th>
+      <th>Issue</th>
+      <th>Action</th>
+      <th>Effort</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="p1">P1 – Bug</td>
+      <td>Settings redirect does nothing (missing import)</td>
+      <td>Add <code>permission_handler</code> import to <code>request_permissions.dart</code></td>
+      <td>1 line</td>
+    </tr>
+    <tr>
+      <td class="p1">P1 – Impact</td>
+      <td>Notification permission asked at cold launch</td>
+      <td>Move <code>NotificationService.init()</code> call to first reminder creation</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td class="p1">P1 – Compliance</td>
+      <td>Missing iOS notification usage description in Info.plist</td>
+      <td>Add <code>NSUserNotificationsUsageDescription</code> key</td>
+      <td>1 line</td>
+    </tr>
+    <tr>
+      <td class="p2">P2 – UX</td>
+      <td>No rationale dialog before calendar permission prompt</td>
+      <td>Show <code>AlertDialog</code> with reason + "Grant" button before <code>requestPermissions()</code></td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td class="p2">P2 – UX</td>
+      <td>No rationale dialog before notification permission prompt</td>
+      <td>Same pattern as above, triggered at reminder creation</td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td class="p2">P2 – UX</td>
+      <td>Silent failure when calendar access denied</td>
+      <td>Show <code>SnackBar</code> with "Grant Calendar Access" action button</td>
+      <td>Small</td>
+    </tr>
+    <tr>
+      <td class="p3">P3 – Polish</td>
+      <td>No permanent-denial recovery for calendar</td>
+      <td>Detect via <code>permission_handler</code> and redirect to Settings</td>
+      <td>Medium</td>
+    </tr>
+    <tr>
+      <td class="p3">P3 – Polish</td>
+      <td>Silent failure when notification denied</td>
+      <td>Show <code>SnackBar</code> explaining reminders are disabled</td>
+      <td>Small</td>
+    </tr>
+  </tbody>
+</table>
+
+
+<hr class="section-divider"/>
+<!-- ═══════════ 7. INDUSTRY-STANDARD FLOW ═══════════ -->
+<h2>7. Industry-Standard Permission Flow (Reference)</h2>
+
+<ol>
+  <li><strong>Defer the ask</strong> — only request permission at the moment the user initiates an action that needs it (e.g. tapping "Add to Calendar", setting a reminder).</li>
+  <li><strong>Show rationale first</strong> — display your own dialog explaining <em>why</em> the permission is needed and what value it unlocks. Provide "Not Now" and "Continue" options.</li>
+  <li><strong>Trigger OS prompt</strong> — only after the user taps "Continue".</li>
+  <li><strong>Handle denied</strong> — silently fall back. Do not ask again in the same session. Show a non-blocking banner if the feature is now unavailable.</li>
+  <li><strong>Handle permanently denied</strong> — detect <code>permanentlyDenied</code>, show a dialog explaining the situation, offer a "Go to Settings" button that calls <code>openAppSettings()</code>.</li>
+  <li><strong>Re-check on resume</strong> — listen to <code>AppLifecycleState.resumed</code> and re-check permission status in case the user granted it from Settings.</li>
+</ol>
+
+<div class="callout callout-blue">
+  Steps 1, 3, and 4 are already implemented. Steps 2, 5, and 6 are the primary gaps.
+</div>
+
+
+<hr class="section-divider"/>
+<!-- ═══════════ FOOTER ═══════════ -->
+<p style="text-align:center; color:#9ca3af; font-size:11px; margin-top:40px;">
+  Permission Audit Report &mdash; Flutter To-Do App &mdash; May 2026
+</p>
+
+</body>
+</html>

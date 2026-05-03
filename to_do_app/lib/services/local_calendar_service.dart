@@ -11,6 +11,16 @@ final DeviceCalendarPlugin _deviceCalendarPlugin = DeviceCalendarPlugin(
 var uuid = Uuid();
 
 class LocalCalendarService {
+  static Future<bool> hasCalendarPermission() async {
+    final r = await _deviceCalendarPlugin.hasPermissions();
+    return r.isSuccess && r.data == true;
+  }
+
+  static Future<bool> requestCalendarPermission() async {
+    final r = await _deviceCalendarPlugin.requestPermissions();
+    return r.isSuccess && r.data == true;
+  }
+
   static Future<List<Calendar>> getCalendars() async {
     try {
       // Request permissions if not granted

@@ -1,4 +1,6 @@
+import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/pages/local_calendar_sync_page.dart';
 import 'package:to_do_app/services/local_calendar_service.dart';
@@ -24,6 +26,96 @@ class _CalendarTileState extends State<LocalCalendarTile> {
     super.initState();
 
     db = widget.db;
+  }
+
+  Future<void> _showOpenSettingsDialog() async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Calendar Access Blocked'),
+            content: const Text(
+              'Calendar access was denied. Please enable it in Settings to sync your tasks.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Not Now'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings();
+                },
+                child: const Text('Open Settings'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<List<Calendar>?> _requestCalendarWithRationale() async {
+    if (await LocalCalendarService.hasCalendarPermission()) {
+      return _getCalendarsOrNull();
+    }
+
+    final status = await Permission.calendarFullAccess.status;
+    if (!mounted) return null;
+
+    if (status.isPermanentlyDenied) {
+      await _showOpenSettingsDialog();
+      return null;
+    }
+
+    // Dialog 1: permission can still be requested
+    final bool accepted =
+        await showDialog<bool>(
+          context: context,
+          builder:
+              (_) => AlertDialog(
+                title: const Text('Calendar Access Required'),
+                content: const Text(
+                  'To sync your tasks with your device calendar, the app needs calendar access.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Not Now'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Grant Access'),
+                  ),
+                ],
+              ),
+        ) ??
+        false;
+
+    if (!accepted) return null;
+
+    final granted = await LocalCalendarService.requestCalendarPermission();
+    if (!granted) {
+      // OS silently blocked (denied once on some devices) — explain and open Settings
+      await _showOpenSettingsDialog();
+      return null;
+    }
+
+    return _getCalendarsOrNull();
+  }
+
+  Future<List<Calendar>?> _getCalendarsOrNull() async {
+    final calendars = await LocalCalendarService.getCalendars();
+    if (calendars.isEmpty && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No calendars found on this device.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return null;
+    }
+    return calendars;
   }
 
   @override
@@ -68,7 +160,8 @@ class _CalendarTileState extends State<LocalCalendarTile> {
                           try {
                             // Fetch calendars
                             final calendars =
-                                await LocalCalendarService.getCalendars();
+                                await _requestCalendarWithRationale();
+                            if (calendars == null) return;
                             if (calendars.isNotEmpty) {
                               // final events = await CalendarService.getEvents(
                               //   calendars[5].id!,
@@ -103,33 +196,39 @@ class _CalendarTileState extends State<LocalCalendarTile> {
                               //   ),
                               // );
                               //isSyncTrue = true;
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => LocalCalendarSyncPage(
-                                        calendars: calendars,
-                                        db: db,
-                                      ),
-                                ),
-                              );
+                              if (mounted) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder:
+                                        (_) => LocalCalendarSyncPage(
+                                          calendars: calendars,
+                                          db: db,
+                                        ),
+                                  ),
+                                );
+                              }
                             } else {
-                              print("No calendars found");
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      "No calendars found on this device.",
+                                    ),
+                                    backgroundColor: Colors.redAccent,
+                                  ),
+                                );
+                              }
+                            }
+                          } catch (e) {
+                            if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text("No calendars found"),
+                                  content: Text("Error fetching events: $e"),
                                   backgroundColor: Colors.redAccent,
                                 ),
                               );
                             }
-                          } catch (e) {
-                            print("Error fetching events: $e");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Error fetching events: $e"),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
                           }
                         },
                         icon: Icon(Icons.refresh),
@@ -148,8 +247,13 @@ class _CalendarTileState extends State<LocalCalendarTile> {
                   if (value) {
                     try {
                       // Fetch calendars
-                      final calendars =
-                          await LocalCalendarService.getCalendars();
+                      final calendars = await _requestCalendarWithRationale();
+                      if (calendars == null) {
+                        setState(() {
+                          isSyncTrue = false;
+                        });
+                        return;
+                      }
                       final toDoCal =
                           await LocalCalendarService.createNewCalendar(
                             calendars,
@@ -192,33 +296,42 @@ class _CalendarTileState extends State<LocalCalendarTile> {
                         //   ),
                         // );
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => LocalCalendarSyncPage(
-                                  calendars: calendars,
-                                  db: db,
-                                ),
-                          ),
-                        );
+                        if (mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => LocalCalendarSyncPage(
+                                    calendars: calendars,
+                                    db: db,
+                                  ),
+                            ),
+                          );
+                        }
                       } else {
-                        print("No calendars found");
+                        setState(() {
+                          isSyncTrue = false;
+                        });
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "No calendars found on this device.",
+                              ),
+                              backgroundColor: Colors.redAccent,
+                            ),
+                          );
+                        }
+                      }
+                    } catch (e) {
+                      if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text("No calendars found"),
+                            content: Text("Error fetching events: $e"),
                             backgroundColor: Colors.redAccent,
                           ),
                         );
                       }
-                    } catch (e) {
-                      print("Error fetching events: $e");
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Error fetching events: $e"),
-                          backgroundColor: Colors.redAccent,
-                        ),
-                      );
                     }
                   } else {
                     widget.db.viewOnlyCalendars["local"] = {};

@@ -8,18 +8,13 @@ class RequestPermissions {
     _permissionHandler = PermissionHandler();
   }
   Future<void> requestNotificationPermission() async {
-    // Implementation for requesting notification permission
-    if (_permissionHandler.notificationPermission ==
-        EnNotificationPermission.denied) {
-      // Request permission logic here
+    final current = await _permissionHandler.notificationPermission;
+    if (current == EnNotificationPermission.denied) {
       await NotificationService.requestNotificationPermission();
       await _permissionHandler.checkPermission();
-    } else if (_permissionHandler.notificationPermission ==
-        EnNotificationPermission.permanentlyDenied) {
+    } else if (current == EnNotificationPermission.permanentlyDenied) {
       openAppSettings();
       await _permissionHandler.checkPermission();
-
-      // Guide user to settings
     }
   }
 }

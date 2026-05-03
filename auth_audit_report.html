@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Auth &amp; Authorization Audit – To-Do App</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 13px;
+      color: #1a1a2e;
+      background: #fff;
+      padding: 40px 50px;
+      max-width: 1020px;
+      margin: auto;
+    }
+    .cover {
+      border-bottom: 3px solid #4f46e5;
+      padding-bottom: 24px;
+      margin-bottom: 32px;
+    }
+    .cover h1 { font-size: 26px; font-weight: 700; color: #1e1b4b; margin-bottom: 6px; }
+    .cover .subtitle { font-size: 14px; color: #6b7280; }
+    .cover .meta {
+      margin-top: 12px; display: flex; gap: 32px;
+      font-size: 12px; color: #6b7280; flex-wrap: wrap;
+    }
+    .cover .meta span strong { color: #1a1a2e; }
+    h2 {
+      font-size: 16px; font-weight: 700; color: #1e1b4b;
+      border-left: 4px solid #4f46e5; padding-left: 10px;
+      margin: 32px 0 14px;
+    }
+    h3 { font-size: 13px; font-weight: 700; color: #374151; margin: 18px 0 6px; }
+    p { margin: 6px 0 10px; line-height: 1.6; color: #374151; }
+    ul { margin: 6px 0 10px 18px; }
+    li { margin-bottom: 4px; line-height: 1.6; color: #374151; }
+    .badge {
+      display: inline-block; padding: 2px 9px; border-radius: 12px;
+      font-size: 11px; font-weight: 600; vertical-align: middle; margin-right: 4px;
+    }
+    .badge-crit  { background: #fca5a5; color: #7f1d1d; border: 1px solid #f87171; }
+    .badge-high  { background: #fed7aa; color: #7c2d12; border: 1px solid #fb923c; }
+    .badge-med   { background: #fef08a; color: #713f12; border: 1px solid #facc15; }
+    .badge-low   { background: #bbf7d0; color: #14532d; border: 1px solid #4ade80; }
+    .badge-good  { background: #d1fae5; color: #065f46; border: 1px solid #34d399; }
+    .badge-info  { background: #dbeafe; color: #1e40af; border: 1px solid #60a5fa; }
+    .badge-bug   { background: #fce7f3; color: #9d174d; border: 1px solid #f472b6; }
+    table {
+      width: 100%; border-collapse: collapse;
+      margin: 12px 0 20px; font-size: 12px;
+    }
+    thead tr { background: #1e1b4b; color: #fff; }
+    thead th { padding: 9px 12px; text-align: left; font-weight: 600; }
+    tbody tr:nth-child(even) { background: #f8f8ff; }
+    tbody td { padding: 8px 12px; vertical-align: top; border-bottom: 1px solid #e5e7eb; }
+    code {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 11px;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+    pre {
+      font-family: 'Cascadia Code', 'Consolas', monospace;
+      font-size: 11px;
+      background: #1e293b;
+      color: #e2e8f0;
+      border-radius: 6px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 10px 0 14px;
+      line-height: 1.6;
+    }
+    pre .cm  { color: #94a3b8; }
+    pre .kw  { color: #7dd3fc; }
+    pre .st  { color: #86efac; }
+    pre .fn  { color: #fbbf24; }
+    pre .cn  { color: #f472b6; }
+    .finding {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+    .finding-crit { border-left: 4px solid #dc2626; background: #fff5f5; }
+    .finding-high { border-left: 4px solid #ea580c; background: #fff8f5; }
+    .finding-med  { border-left: 4px solid #ca8a04; background: #fffdf0; }
+    .finding-low  { border-left: 4px solid #16a34a; background: #f6fff8; }
+    .finding-bug  { border-left: 4px solid #db2777; background: #fff0f9; }
+    .finding h3   { margin-top: 0; }
+    .finding-loc  { font-size: 11px; color: #6b7280; margin-bottom: 8px; font-style: italic; }
+    .scorecard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin: 14px 0 24px;
+    }
+    .score-box {
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .score-box .label { font-size: 11px; color: #6b7280; margin-bottom: 6px; }
+    .score-box .value { font-size: 24px; font-weight: 700; }
+    .score-green { color: #16a34a; }
+    .score-yellow { color: #ca8a04; }
+    .score-red { color: #dc2626; }
+    .toc { margin: 0 0 28px; padding: 16px 20px; background: #f8faff; border-radius: 8px; border: 1px solid #dbeafe; }
+    .toc h3 { margin: 0 0 10px; color: #1e1b4b; }
+    .toc ol { padding-left: 18px; }
+    .toc li { margin-bottom: 4px; }
+    .toc a { color: #4f46e5; text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+    .summary-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0; }
+    hr { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+    .fix-block {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 12px;
+    }
+    .fix-block strong { color: #14532d; }
+    .ref { font-size: 11px; color: #6b7280; font-style: italic; }
+  </style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <h1>Authentication &amp; Authorization Audit</h1>
+  <div class="subtitle">Flutter To-Do App — Security Pipeline Review</div>
+  <div class="meta">
+    <span><strong>Date:</strong> 2026-05-03</span>
+    <span><strong>Audited By:</strong> Claude Code (Automated Static Analysis)</span>
+    <span><strong>App:</strong> to_do_app (Flutter / Dart)</span>
+    <span><strong>Branch:</strong> master</span>
+    <span><strong>Scope:</strong> Authentication, Authorization, Token Management, Credential Handling</span>
+  </div>
+</div>
+
+<!-- EXECUTIVE SUMMARY -->
+<h2 id="summary">1. Executive Summary</h2>
+<p>
+  This audit evaluates the authentication and authorization pipeline of the Flutter To-Do app against
+  industry-standard practices (OAuth 2.0 RFC 6749, OWASP MASVS, Google/Microsoft SDK best practices).
+  The app uses OAuth 2.0 delegation exclusively — no password handling — which is fundamentally sound.
+  However, several implementation gaps introduce security and reliability risks ranging from critical
+  configuration mismatches to missing access controls.
+</p>
+
+<div class="scorecard">
+  <div class="score-box">
+    <div class="label">Auth Protocol</div>
+    <div class="value score-green">Good</div>
+    <div class="label" style="margin-top:4px">OAuth 2.0 only, no passwords</div>
+  </div>
+  <div class="score-box">
+    <div class="label">Token Storage</div>
+    <div class="value score-green">Good</div>
+    <div class="label" style="margin-top:4px">FlutterSecureStorage (encrypted)</div>
+  </div>
+  <div class="score-box">
+    <div class="label">Authorization Controls</div>
+    <div class="value score-red">Weak</div>
+    <div class="label" style="margin-top:4px">No route guards; no AuthProvider</div>
+  </div>
+  <div class="score-box">
+    <div class="label">Credential Hygiene</div>
+    <div class="value score-yellow">Mixed</div>
+    <div class="label" style="margin-top:4px">Client IDs hardcoded; anonKey in source</div>
+  </div>
+  <div class="score-box">
+    <div class="label">Bugs Found</div>
+    <div class="value score-red">3</div>
+    <div class="label" style="margin-top:4px">Logic errors in Outlook flow</div>
+  </div>
+  <div class="score-box">
+    <div class="label">Findings Total</div>
+    <div class="value score-yellow">10</div>
+    <div class="label" style="margin-top:4px">1 Critical · 3 High · 4 Medium · 2 Low</div>
+  </div>
+</div>
+
+<div class="summary-row">
+  <span class="badge badge-crit">1 Critical</span>
+  <span class="badge badge-high">3 High</span>
+  <span class="badge badge-med">4 Medium</span>
+  <span class="badge badge-low">2 Low</span>
+  <span class="badge badge-bug">3 Bugs</span>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#summary">Executive Summary</a></li>
+    <li><a href="#arch">Authentication Architecture Overview</a></li>
+    <li><a href="#standards">Compliance Against Industry Standards</a></li>
+    <li><a href="#findings">Detailed Findings</a></li>
+    <li><a href="#bugs">Code-Level Bugs</a></li>
+    <li><a href="#roadmap">Remediation Roadmap</a></li>
+  </ol>
+</div>
+
+<!-- ARCHITECTURE -->
+<h2 id="arch">2. Authentication Architecture Overview</h2>
+<p>The app integrates three separate identity providers and one backend service:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Provider</th>
+      <th>Protocol</th>
+      <th>Service File</th>
+      <th>Scopes Requested</th>
+      <th>Token Storage</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Google</strong></td>
+      <td>OAuth 2.0 (google_sign_in SDK)</td>
+      <td><code>google_sign.dart</code></td>
+      <td><code>email</code>, <code>calendar</code>, <code>drive.file</code></td>
+      <td>In-memory + SDK-managed (auto-refresh)</td>
+    </tr>
+    <tr>
+      <td><strong>Microsoft</strong></td>
+      <td>OAuth 2.0 / MSAL (msal_auth SDK)</td>
+      <td><code>outlook_sign.dart</code></td>
+      <td><code>User.Read</code>, <code>Calendars.ReadWrite</code></td>
+      <td><code>FlutterSecureStorage</code> (key: <code>outlook_cal_accessToken</code>)</td>
+    </tr>
+    <tr>
+      <td><strong>Supabase</strong></td>
+      <td>JWT / REST</td>
+      <td><code>main.dart</code> (init only)</td>
+      <td>Anonymous (anonKey)</td>
+      <td>Supabase SDK-managed</td>
+    </tr>
+    <tr>
+      <td><strong>AI Endpoint</strong></td>
+      <td>REST (no auth)</td>
+      <td><code>AiTaskService.dart</code></td>
+      <td>None</td>
+      <td>N/A</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>App Startup Auth Flow (main.dart lines 80–111)</h3>
+<pre>
+<span class="cm">// 1. Supabase initialized with hardcoded anonKey</span>
+<span class="fn">Supabase.initialize</span>(url: ..., anonKey: <span class="st">"eyJ..."</span>)
+
+<span class="cm">// 2. GoogleAuthService: silent then FORCED interactive sign-in</span>
+<span class="kw">await</span> <span class="fn">GoogleAuthService.initApp</span>();     <span class="cm">// signInSilently() → signIn() if null</span>
+
+<span class="cm">// 3. OutlookAuthService: silent then FORCED interactive sign-in</span>
+<span class="kw">await</span> <span class="fn">OutlookAuthService.initialize</span>();  <span class="cm">// acquireTokenSilently() → signIn() if null</span>
+
+<span class="cm">// 4. App launches with NO auth state provider in widget tree</span>
+<span class="fn">runApp</span>(MultiProvider(...))             <span class="cm">// no AuthProvider included</span>
+</pre>
+
+<p>
+  Both Google and Outlook authentication are forced at startup before the user has interacted with
+  calendar features. This is an <strong>unconventional UX pattern</strong> — industry standard is
+  lazy/deferred auth triggered when the protected feature is first accessed.
+</p>
+
+<!-- COMPLIANCE -->
+<h2 id="standards">3. Compliance Against Industry Standards</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Standard / Requirement</th>
+      <th>Status</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Use OAuth 2.0 / OIDC for third-party identity (RFC 6749)</td>
+      <td><span class="badge badge-good">Pass</span></td>
+      <td>Google and Microsoft use certified SDKs; no custom auth implementation</td>
+    </tr>
+    <tr>
+      <td>No passwords stored or handled by the app</td>
+      <td><span class="badge badge-good">Pass</span></td>
+      <td>Pure OAuth delegation — zero password surface area</td>
+    </tr>
+    <tr>
+      <td>Tokens stored in OS-level secure enclave (OWASP MASVS-STORAGE-1)</td>
+      <td><span class="badge badge-good">Pass</span></td>
+      <td><code>FlutterSecureStorage</code> uses Android Keystore / iOS Keychain</td>
+    </tr>
+    <tr>
+      <td>All API communication over HTTPS (OWASP MASVS-NETWORK-1)</td>
+      <td><span class="badge badge-good">Pass</span></td>
+      <td>All endpoints use <code>https://</code></td>
+    </tr>
+    <tr>
+      <td>Token refresh without requiring re-login</td>
+      <td><span class="badge badge-good">Pass</span></td>
+      <td>Google SDK auto-refreshes; MSAL <code>acquireTokenSilently()</code> handles refresh</td>
+    </tr>
+    <tr>
+      <td>Least-privilege scopes (request only what is needed)</td>
+      <td><span class="badge badge-warn">Partial</span></td>
+      <td>Google requests full <code>calendar</code> write scope even for read-only views; <code>drive.file</code> is appropriately scoped</td>
+    </tr>
+    <tr>
+      <td>No secrets in source code (OWASP MASVS-RESILIENCE-2)</td>
+      <td><span class="badge badge-warn">Partial</span></td>
+      <td>Supabase anonKey and OAuth Client IDs hardcoded in source; Client IDs are semi-public but the Supabase key is sensitive</td>
+    </tr>
+    <tr>
+      <td>Route / page-level authorization guards</td>
+      <td><span class="badge badge-bad">Fail</span></td>
+      <td>All 7 routes are accessible with no auth check; no <code>AuthGuard</code>, no <code>GoRouter</code> redirect</td>
+    </tr>
+    <tr>
+      <td>Centralized auth state (single source of truth)</td>
+      <td><span class="badge badge-bad">Fail</span></td>
+      <td>Auth state split across <code>GoogleAuthService.currentUser</code>, <code>OutlookAuthService._accessToken</code>, and <code>db.accountDetails</code></td>
+    </tr>
+    <tr>
+      <td>Consent-before-auth (user initiates sign-in)</td>
+      <td><span class="badge badge-bad">Fail</span></td>
+      <td>Both Google and Outlook trigger interactive sign-in at cold start without user request</td>
+    </tr>
+    <tr>
+      <td>Complete sign-out (clears all auth state + stored tokens)</td>
+      <td><span class="badge badge-warn">Partial</span></td>
+      <td>Google sign-out clears in-memory only; Outlook sign-out does not delete stored key from <code>FlutterSecureStorage</code></td>
+    </tr>
+    <tr>
+      <td>No sensitive data in debug logs (OWASP MASVS-RESILIENCE-1)</td>
+      <td><span class="badge badge-bad">Fail</span></td>
+      <td>Access tokens printed to console via <code>print()</code> in <code>outlook_sign.dart</code></td>
+    </tr>
+    <tr>
+      <td>API endpoints are authenticated (backend auth)</td>
+      <td><span class="badge badge-warn">Partial</span></td>
+      <td>Google/Outlook APIs use Bearer tokens correctly; AI/Supabase Edge Function has no auth header</td>
+    </tr>
+    <tr>
+      <td>Configuration consistency (client IDs match across files)</td>
+      <td><span class="badge badge-bad">Fail</span></td>
+      <td>MSAL Client ID mismatch: <code>outlook_sign.dart</code> vs <code>msal_config.json</code> use different values</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- FINDINGS -->
+<h2 id="findings">4. Detailed Findings</h2>
+
+<!-- FINDING 1 -->
+<div class="finding finding-crit">
+  <h3><span class="badge badge-crit">Critical</span> F-01 — MSAL Client ID Mismatch</h3>
+  <div class="finding-loc">outlook_sign.dart:5 · android/app/src/main/assets/msal_config.json</div>
+  <p>
+    The client ID hardcoded in <code>OutlookAuthService</code> and the client ID in the MSAL Android
+    configuration file are <strong>different values</strong>. MSAL uses the config file to validate
+    the redirect URI against the registered app. When these differ, authentication either silently
+    fails or silently authenticates against the wrong Azure AD application registration, potentially
+    granting tokens scoped to a different application.
+  </p>
+  <pre>
+<span class="cm">// outlook_sign.dart:5</span>
+<span class="kw">static const</span> _clientId = <span class="st">'6450d522-3a1c-4005-ae93-1fdc7f91aea2'</span>;
+
+<span class="cm">// msal_config.json — different ID!</span>
+<span class="st">"client_id"</span>: <span class="st">"1046c7a4-3a52-4845-b477-81163b44f47e"</span>
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Decide which Azure AD app registration is the correct one and make both
+    files reference the same client ID. Verify the redirect URI is registered for that app in
+    Azure Portal under Authentication → Redirect URIs.
+  </div>
+</div>
+
+<!-- FINDING 2 -->
+<div class="finding finding-high">
+  <h3><span class="badge badge-high">High</span> F-02 — Forced Interactive Sign-In at Cold Start</h3>
+  <div class="finding-loc">main.dart:100–101 · google_sign.dart:24–25 · outlook_sign.dart:137–138</div>
+  <p>
+    Both Google and Outlook authentication attempt <strong>interactive sign-in dialogs at app
+    startup</strong>, before the user has navigated to any calendar feature. This violates the
+    OAuth 2.0 principle of requesting only the permissions needed at the time they are needed
+    ("incremental authorization"), and it means:
+  </p>
+  <ul>
+    <li>Users who only want the task manager (no calendar) are forced through two OAuth flows.</li>
+    <li>If either flow fails or is cancelled, the failure is silently swallowed.</li>
+    <li>Outlook's <code>initialize()</code> may open a full browser-based login at cold start.</li>
+  </ul>
+  <pre>
+<span class="cm">// google_sign.dart — initApp() forces sign-in if silent fails</span>
+<span class="kw">static</span> <span class="fn">Future</span>&lt;<span class="kw">void</span>&gt; <span class="fn">initApp</span>() <span class="kw">async</span> {
+  <span class="cn">GoogleSignInAccount</span>? user = <span class="kw">await</span> <span class="fn">signInSilently</span>();
+  <span class="kw">if</span> (user == <span class="kw">null</span>) user = <span class="kw">await</span> <span class="fn">signIn</span>(); <span class="cm">// ← interactive dialog on first launch</span>
+}
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Replace <code>initApp()</code> with silent-only restoration at startup.
+    Trigger interactive sign-in only when the user taps a calendar-sync button or navigates to
+    <code>/calendarSync</code>. Use <code>signInSilently()</code> exclusively at startup.
+  </div>
+</div>
+
+<!-- FINDING 3 -->
+<div class="finding finding-high">
+  <h3><span class="badge badge-high">High</span> F-03 — No Route-Level Authorization Guards</h3>
+  <div class="finding-loc">main.dart:144–163</div>
+  <p>
+    All seven application routes are defined in <code>MaterialApp.routes</code> with no authentication
+    check. Any deep link or programmatic navigation can reach any page without an authenticated session.
+    While this is a personal to-do app (single user), the pattern establishes no boundary between
+    unauthenticated and protected state, which is especially relevant because the app stores and
+    displays user data loaded from Hive on startup.
+  </p>
+  <pre>
+<span class="cm">// main.dart — no guard on any route</span>
+routes: {
+  <span class="st">'/'</span>:                (<span class="cn">context</span>) =&gt; <span class="cn">TaskPage</span>(...),
+  <span class="st">'/calendarSync'</span>:    (<span class="cn">context</span>) =&gt; <span class="cn">CalenderSyncPage</span>(...),  <span class="cm">// needs auth</span>
+  <span class="st">'/statistics'</span>:      (<span class="cn">context</span>) =&gt; <span class="cn">StatisticsPage</span>(...),
+  <span class="st">'/calendar'</span>:        (<span class="cn">context</span>) =&gt; <span class="cn">CalendarPage</span>(...),       <span class="cm">// needs auth</span>
+  ...                                                         <span class="cm">// no AuthGuard</span>
+}
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Introduce an <code>AuthProvider</code> (ChangeNotifier) tracking sign-in
+    state for each provider. In <code>CalenderSyncPage</code> and <code>CalendarPage</code> build methods,
+    check <code>Provider.of&lt;AuthProvider&gt;(context).isGoogleSignedIn</code> and redirect to the
+    sign-in page if false. Alternatively, migrate to <code>go_router</code> with <code>redirect</code>
+    callbacks for a cleaner solution.
+  </div>
+</div>
+
+<!-- FINDING 4 -->
+<div class="finding finding-high">
+  <h3><span class="badge badge-high">High</span> F-04 — Access Token Logged to Console</h3>
+  <div class="finding-loc">outlook_sign.dart:79</div>
+  <p>
+    A live access token is printed to the debug console. In debug builds this is visible in any
+    attached debugger or log aggregation tool. If any crash reporting SDK (Crashlytics, Sentry) is
+    added in the future, tokens may be transmitted to third-party servers.
+  </p>
+  <pre>
+<span class="cm">// outlook_sign.dart:79</span>
+print(<span class="st">"🔑 Silent token acquired: <span class="cn">${result.accessToken}</span>"</span>); <span class="cm">// ← full token in log</span>
+
+<span class="cm">// outlook_sign.dart:112</span>
+print(<span class="st">'Access Token: <span class="cn">${result.accessToken}</span>'</span>); <span class="cm">// ← also in interactive sign-in</span>
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Remove all <code>print()</code> statements containing token values.
+    If debug logging is needed, log only the first 8 characters (e.g., <code>${token.substring(0,8)}...</code>)
+    or use a conditional: <code>if (kDebugMode) debugPrint(...)</code> with a token hint only.
+  </div>
+</div>
+
+<!-- FINDING 5 -->
+<div class="finding finding-med">
+  <h3><span class="badge badge-med">Medium</span> F-05 — Unauthenticated AI / Supabase Edge Function Call</h3>
+  <div class="finding-loc">AiTaskService.dart:20–26</div>
+  <p>
+    The AI task generation endpoint is called with only a <code>Content-Type</code> header and no
+    authorization. Since Supabase Edge Functions can enforce JWT authentication, this endpoint is
+    either publicly open (no row-level security possible) or relying solely on the secret function
+    URL for security ("security by obscurity"). Neither is acceptable for a production API that may
+    incur LLM costs per call.
+  </p>
+  <pre>
+<span class="cm">// AiTaskService.dart:22–25</span>
+<span class="kw">final</span> response = <span class="kw">await</span> http.<span class="fn">post</span>(
+  <span class="cn">Uri.parse</span>(_endpoint),
+  headers: {<span class="st">'Content-Type'</span>: <span class="st">'application/json'</span>}, <span class="cm">// ← no Authorization header</span>
+  body: <span class="fn">jsonEncode</span>(body),
+);
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Add the Supabase anon key as a Bearer token header:
+    <code>'Authorization': 'Bearer &lt;anonKey&gt;'</code>. Better: use the Supabase Dart client's
+    <code>functions.invoke()</code> which automatically attaches the session JWT.
+    On the server side, enable <code>verify_jwt: true</code> in the function configuration.
+  </div>
+</div>
+
+<!-- FINDING 6 -->
+<div class="finding finding-med">
+  <h3><span class="badge badge-med">Medium</span> F-06 — Supabase anonKey Hardcoded in Source</h3>
+  <div class="finding-loc">main.dart:85–86</div>
+  <p>
+    The Supabase anonymous key (a long-lived JWT) is hardcoded directly in <code>main.dart</code>
+    and committed to the repository. While Supabase's anon key is intentionally public-facing
+    (it's used client-side and protected by Row-Level Security), embedding it directly in source
+    means it will appear in git history permanently, even if rotated. Anyone with read access to
+    the repo has the key.
+  </p>
+  <pre>
+<span class="cm">// main.dart:85–86</span>
+anonKey: <span class="st">"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn..."</span>,
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Move to a <code>.env</code> file (using <code>flutter_dotenv</code> or
+    compile-time <code>--dart-define</code> flags) and add <code>.env</code> to <code>.gitignore</code>.
+    Example: <code>flutter run --dart-define=SUPABASE_ANON_KEY=eyJ...</code> then read with
+    <code>const String.fromEnvironment('SUPABASE_ANON_KEY')</code>.
+  </div>
+</div>
+
+<!-- FINDING 7 -->
+<div class="finding finding-med">
+  <h3><span class="badge badge-med">Medium</span> F-07 — Fragmented Auth State (No AuthProvider)</h3>
+  <div class="finding-loc">google_sign.dart · outlook_sign.dart · data/database.dart</div>
+  <p>
+    Authentication state is stored in three separate locations with no synchronization:
+  </p>
+  <ul>
+    <li><code>GoogleAuthService.currentUser</code> — static nullable field (in-memory)</li>
+    <li><code>OutlookAuthService._accessToken</code> — private static nullable string (in-memory)</li>
+    <li><code>db.accountDetails["userName"]</code> — Hive-persisted user display info</li>
+  </ul>
+  <p>
+    This means widgets reading from different sources can display inconsistent state (e.g., the drawer
+    showing a user name from Hive while <code>currentUser</code> is null after a token expiry). There
+    is no <code>ChangeNotifier</code> to rebuild UI on auth state changes, so sign-out does not
+    automatically update dependent widgets.
+  </p>
+  <div class="fix-block">
+    <strong>Fix:</strong> Create a single <code>AuthProvider extends ChangeNotifier</code> registered
+    in <code>MultiProvider</code>. It should expose <code>isGoogleSignedIn</code>,
+    <code>isOutlookSignedIn</code>, and <code>currentUserDisplayName</code>, and call
+    <code>notifyListeners()</code> on sign-in/sign-out. All widgets should read from this single source.
+  </div>
+</div>
+
+<!-- FINDING 8 -->
+<div class="finding finding-med">
+  <h3><span class="badge badge-med">Medium</span> F-08 — Over-Privileged Google Calendar Scope</h3>
+  <div class="finding-loc">google_sign.dart:11</div>
+  <p>
+    The app requests the full read/write <code>https://www.googleapis.com/auth/calendar</code> scope.
+    Google's calendar API provides a read-only scope (<code>calendar.readonly</code>) and an
+    event-only write scope (<code>calendar.events</code>). If any feature only needs to read events,
+    the full write scope is unnecessarily broad, violating the principle of least privilege.
+  </p>
+  <pre>
+<span class="cm">// google_sign.dart:9–13</span>
+scopes: [
+  <span class="st">'email'</span>,
+  <span class="st">'https://www.googleapis.com/auth/calendar'</span>,  <span class="cm">// ← full read+write+settings</span>
+  <span class="st">'https://www.googleapis.com/auth/drive.file'</span>, <span class="cm">// ← this one is appropriately scoped</span>
+]
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Audit which calendar operations are performed. If only event creation/editing
+    is needed, replace with <code>https://www.googleapis.com/auth/calendar.events</code>. This also
+    reduces the permissions shown in the Google consent dialog, increasing user trust.
+  </div>
+</div>
+
+<!-- FINDING 9 -->
+<div class="finding finding-low">
+  <h3><span class="badge badge-low">Low</span> F-09 — Incomplete Sign-Out (Outlook Token Not Deleted)</h3>
+  <div class="finding-loc">outlook_sign.dart:59–67</div>
+  <p>
+    <code>OutlookAuthService.signOut()</code> calls <code>_pca.signOut()</code> and clears the
+    in-memory <code>_accessToken</code>, but does not delete the persisted token from
+    <code>FlutterSecureStorage</code>. On next app launch, <code>restoreLastSession()</code> will
+    find and attempt to reuse this stale token.
+  </p>
+  <pre>
+<span class="cm">// outlook_sign.dart:59–67</span>
+<span class="kw">static</span> <span class="fn">Future</span>&lt;<span class="kw">void</span>&gt; <span class="fn">signOut</span>() <span class="kw">async</span> {
+  <span class="kw">await</span> _pca.<span class="fn">signOut</span>();
+  _accessToken = <span class="kw">null</span>;
+  <span class="cm">// ← missing: await storage.delete(key: 'outlook_cal_accessToken');</span>
+}
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Add <code>await storage.delete(key: 'outlook_cal_accessToken');</code>
+    inside <code>signOut()</code>.
+  </div>
+</div>
+
+<!-- FINDING 10 -->
+<div class="finding finding-low">
+  <h3><span class="badge badge-low">Low</span> F-10 — Account Details Not Cleared on Sign-Out</h3>
+  <div class="finding-loc">pages/sign_in_page.dart (sign-out handler)</div>
+  <p>
+    The Google sign-out handler clears <code>GoogleAuthService</code> state but leaves
+    <code>db.accountDetails</code> (Hive) populated with the previous user's name and profile
+    picture URL. On next launch, the drawer will briefly show the stale user name before
+    auth state is resolved.
+  </p>
+  <div class="fix-block">
+    <strong>Fix:</strong> In the sign-out handler, call <code>db.accountDetails = {"userName": "none", "profilePicture": "none"}; db.saveAccountDetails();</code>
+    to clear persisted display data alongside auth state.
+  </div>
+</div>
+
+<!-- BUGS -->
+<h2 id="bugs">5. Code-Level Bugs</h2>
+
+<!-- BUG 1 -->
+<div class="finding finding-bug">
+  <h3><span class="badge badge-bug">Bug</span> B-01 — Stale Token Written to Storage in initialize()</h3>
+  <div class="finding-loc">outlook_sign.dart:130–134</div>
+  <p>
+    In <code>OutlookAuthService.initialize()</code>, the storage write uses <code>_accessToken</code>
+    (the old/null value) instead of <code>silentToken</code> (the freshly acquired value).
+    The in-memory assignment happens <em>after</em> the write. This means the stored token is always
+    one session behind — or null on first run.
+  </p>
+  <pre>
+<span class="cm">// outlook_sign.dart:127–135 — current (buggy)</span>
+<span class="kw">if</span> (silentToken != <span class="kw">null</span>) {
+  <span class="kw">await</span> storage.<span class="fn">write</span>(
+    key: <span class="st">'outlook_cal_accessToken'</span>,
+    value: _accessToken,   <span class="cm">// ← BUG: _accessToken is still the OLD value here</span>
+  );
+  _accessToken = silentToken; <span class="cm">// ← assignment happens AFTER the write</span>
+  <span class="kw">return true</span>;
+}
+
+<span class="cm">// Fix: swap the order</span>
+<span class="kw">if</span> (silentToken != <span class="kw">null</span>) {
+  _accessToken = silentToken;             <span class="cm">// ← assign first</span>
+  <span class="kw">await</span> storage.<span class="fn">write</span>(
+    key: <span class="st">'outlook_cal_accessToken'</span>,
+    value: silentToken,                   <span class="cm">// ← then write the fresh value</span>
+  );
+  <span class="kw">return true</span>;
+}
+</pre>
+</div>
+
+<!-- BUG 2 -->
+<div class="finding finding-bug">
+  <h3><span class="badge badge-bug">Bug</span> B-02 — restoreLastSession() Trusts Expired Token Before Verifying</h3>
+  <div class="finding-loc">outlook_sign.dart:32–33</div>
+  <p>
+    <code>restoreLastSession()</code> assigns the stored token to <code>_accessToken</code>
+    <em>before</em> calling <code>acquireTokenSilently()</code> to verify it. If
+    <code>acquireTokenSilently()</code> fails (line 35), the function returns <code>false</code>
+    but <code>_accessToken</code> is already set to the expired token. Any code path that calls
+    <code>OutlookAuthService.accessToken</code> after a failed restoration will receive an
+    expired token and make failing API calls with no indication of why.
+  </p>
+  <pre>
+<span class="cm">// outlook_sign.dart:32–56 — current (buggy)</span>
+_accessToken = savedToken;  <span class="cm">// ← set BEFORE verifying</span>
+<span class="kw">final</span> silentToken = <span class="kw">await</span> <span class="fn">acquireTokenSilently</span>();
+<span class="kw">if</span> (silentToken != <span class="kw">null</span>) { ... <span class="kw">return true</span>; }
+<span class="cm">// silentToken is null here — _accessToken still holds the expired token!</span>
+<span class="kw">return false</span>;  <span class="cm">// ← but _accessToken was never cleared</span>
+
+<span class="cm">// Fix: only assign after verification succeeds</span>
+<span class="kw">final</span> silentToken = <span class="kw">await</span> <span class="fn">acquireTokenSilently</span>();
+<span class="kw">if</span> (silentToken != <span class="kw">null</span>) {
+  _accessToken = silentToken; <span class="cm">// ← assign only on success</span>
+  <span class="kw">await</span> storage.<span class="fn">write</span>(key: <span class="st">'outlook_cal_accessToken'</span>, value: silentToken);
+  <span class="kw">return true</span>;
+}
+_accessToken = <span class="kw">null</span>; <span class="cm">// ← explicitly clear on failure</span>
+<span class="kw">return false</span>;
+</pre>
+</div>
+
+<!-- BUG 3 -->
+<div class="finding finding-bug">
+  <h3><span class="badge badge-bug">Bug</span> B-03 — _GoogleAuthClient Inner Client Never Closed</h3>
+  <div class="finding-loc">google_sign.dart:106–113</div>
+  <p>
+    <code>_GoogleAuthClient</code> creates a new <code>http.Client()</code> at instantiation.
+    <code>_initApis()</code> creates a new <code>_GoogleAuthClient</code> on every call (every API
+    use via <code>ensureApisReady()</code>), meaning each call leaks an HTTP connection pool.
+    <code>http.Client</code> holds open connections and should be closed when no longer needed.
+  </p>
+  <pre>
+<span class="cm">// google_sign.dart:106–113 — current (leaky)</span>
+<span class="kw">class</span> <span class="cn">_GoogleAuthClient</span> <span class="kw">extends</span> http.<span class="cn">BaseClient</span> {
+  <span class="kw">final</span> http.<span class="cn">Client</span> _inner = http.<span class="cn">Client</span>(); <span class="cm">// ← new client every instantiation</span>
+  <span class="cm">// close() is never called; previous client instances are discarded</span>
+}
+</pre>
+  <div class="fix-block">
+    <strong>Fix:</strong> Either (a) make <code>_inner</code> a static singleton, or (b) override
+    <code>close()</code> in <code>_GoogleAuthClient</code> to call <code>_inner.close()</code>, and
+    call <code>calendarApi = null; client.close()</code> on sign-out. Option (a) is simpler for this use case.
+  </div>
+</div>
+
+<!-- ROADMAP -->
+<h2 id="roadmap">6. Remediation Roadmap</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Finding</th>
+      <th>Priority</th>
+      <th>Effort</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>F-01: MSAL Client ID mismatch</td>
+      <td><span class="badge badge-crit">Critical</span></td>
+      <td>5 min</td>
+      <td>Verify correct Azure AD app; update one file to match the other</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>B-01: Stale token written in initialize()</td>
+      <td><span class="badge badge-bug">Bug</span></td>
+      <td>2 min</td>
+      <td>Swap assignment and write order in <code>outlook_sign.dart:130–134</code></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>B-02: Expired token left in memory after failed restore</td>
+      <td><span class="badge badge-bug">Bug</span></td>
+      <td>5 min</td>
+      <td>Defer <code>_accessToken</code> assignment until after successful verification</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>F-04: Access tokens in console logs</td>
+      <td><span class="badge badge-high">High</span></td>
+      <td>5 min</td>
+      <td>Remove <code>print(result.accessToken)</code> from <code>outlook_sign.dart</code></td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td>F-02: Forced interactive sign-in at startup</td>
+      <td><span class="badge badge-high">High</span></td>
+      <td>30 min</td>
+      <td>Remove interactive fallback from <code>initApp()</code>; trigger on user action only</td>
+    </tr>
+    <tr>
+      <td>6</td>
+      <td>F-09: Outlook sign-out doesn't delete stored token</td>
+      <td><span class="badge badge-low">Low</span></td>
+      <td>2 min</td>
+      <td>Add <code>storage.delete(key: 'outlook_cal_accessToken')</code> to <code>signOut()</code></td>
+    </tr>
+    <tr>
+      <td>7</td>
+      <td>F-05: Unauthenticated AI endpoint</td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>15 min</td>
+      <td>Add Supabase anon/user JWT as Authorization header; enable JWT verification server-side</td>
+    </tr>
+    <tr>
+      <td>8</td>
+      <td>F-07: Fragmented auth state</td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>2–3 hrs</td>
+      <td>Create <code>AuthProvider</code> ChangeNotifier; register in MultiProvider</td>
+    </tr>
+    <tr>
+      <td>9</td>
+      <td>F-03: No route guards</td>
+      <td><span class="badge badge-high">High</span></td>
+      <td>1–2 hrs</td>
+      <td>Add auth checks in calendar-dependent pages, or migrate to <code>go_router</code></td>
+    </tr>
+    <tr>
+      <td>10</td>
+      <td>F-06: Supabase anonKey in source</td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>30 min</td>
+      <td>Move to <code>--dart-define</code> build args or <code>flutter_dotenv</code></td>
+    </tr>
+    <tr>
+      <td>11</td>
+      <td>F-08: Over-privileged calendar scope</td>
+      <td><span class="badge badge-med">Medium</span></td>
+      <td>20 min</td>
+      <td>Downgrade to <code>calendar.events</code> if full calendar settings access is not needed</td>
+    </tr>
+    <tr>
+      <td>12</td>
+      <td>B-03: HTTP client leak in _GoogleAuthClient</td>
+      <td><span class="badge badge-bug">Bug</span></td>
+      <td>15 min</td>
+      <td>Make <code>_inner</code> a static field or implement proper <code>close()</code></td>
+    </tr>
+    <tr>
+      <td>13</td>
+      <td>F-10: Stale user data after sign-out</td>
+      <td><span class="badge badge-low">Low</span></td>
+      <td>5 min</td>
+      <td>Clear <code>db.accountDetails</code> in sign-out handler</td>
+    </tr>
+  </tbody>
+</table>
+
+<hr />
+<p class="ref">
+  References: OAuth 2.0 RFC 6749 · OWASP Mobile Application Security Verification Standard (MASVS) v2.0 ·
+  Google Identity Platform OAuth 2.0 Best Practices · Microsoft Identity Platform (MSAL) Documentation ·
+  Supabase Auth Documentation · Flutter Secure Storage package documentation
+</p>
+<p class="ref" style="margin-top:8px;">
+  <em>This report was generated by static code analysis. Runtime behavior, network traffic inspection,
+  and backend Row-Level Security policies were not tested. A dynamic / penetration test is recommended
+  for production deployment.</em>
+</p>
+
+</body>
+</html>

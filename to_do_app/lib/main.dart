@@ -89,7 +89,7 @@ void main() async {
   var box = await Hive.openBox("mybox");
   Box fileMetaBox = await Hive.openBox("fileMetaBox");
   path = box.path!;
-  //await box.clear();
+  await box.clear();
   final _myBox = Hive.box("mybox");
   if (_myBox.get("TODOLIST") == null && _myBox.get("CATEGORIES") == null) {
     db.createInitialData();

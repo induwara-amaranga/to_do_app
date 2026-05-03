@@ -2,13 +2,11 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:googleapis/driveactivity/v2.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:to_do_app/data/database.dart';
-import 'package:to_do_app/models/types.dart';
 import 'package:to_do_app/utils/date_time_utils.dart';
 import 'package:to_do_app/utils/string_utils.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 //import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
@@ -28,9 +26,9 @@ class NotificationService {
     const AndroidInitializationSettings androidInit =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const iOSInit = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
     );
 
     const InitializationSettings initSettings = InitializationSettings(
@@ -43,8 +41,6 @@ class NotificationService {
       onDidReceiveNotificationResponse: onNotificationResponse,
       onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
-    // ✅ Request permission after init
-    await requestNotificationPermission();
   }
 
   static Future<bool> isNotificationPermissionGranted() async {
@@ -258,7 +254,6 @@ class NotificationService {
 
   static Future<void> sheduledTimeNotification({
     required List<dynamic> payload,
-    BuildContext? context,
     required int id,
     required String title,
     required String body,
@@ -271,14 +266,9 @@ class NotificationService {
     required String repeatType,
     required bool isFullScreen,
   }) async {
-    final bool hasPermission = await isNotificationPermissionGranted();
-    if (!hasPermission) {
-      print("⚠️ Notification permission not granted. Requesting...");
+    if (!await isNotificationPermissionGranted()) {
       final bool granted = await requestNotificationPermission();
-      if (!granted) {
-        print("❌ Permission denied. Notification not scheduled.");
-        return;
-      }
+      if (!granted) return;
     }
     final scheduledDateTime = tz.TZDateTime(
       tz.UTC, // 👈 local time (important)
@@ -295,13 +285,7 @@ class NotificationService {
       "------------------------------------------Scheduling notification for $scheduledDateTime | now=$now | repeat=$repeatType -----------",
     );
 
-    if (context != null && scheduledDateTime.isBefore(now)) {
-      // ScaffoldMessenger.of(context).showSnackBar(
-      //   const SnackBar(
-      //     content: Text("⚠️ Scheduled time is in the past! Reminder not set."),
-      //     backgroundColor: Colors.redAccent,
-      //   ),
-      // );
+    if (scheduledDateTime.isBefore(now)) {
       print("⚠️ Scheduled time is in the past! Reminder not set.");
       return;
     }
@@ -360,16 +344,6 @@ class NotificationService {
       );
     } catch (e) {
       print("Scheduling error: $e");
-
-      if (context != null) {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   SnackBar(
-        //     content: Text("Failed to schedule notification: $e"),
-        //     backgroundColor: Colors.redAccent,
-        //   ),
-        // );
-        //print("Failed to schedule notification: $e");
-      }
     }
   }
 
@@ -647,6 +621,76 @@ class NotificationService {
       return;
     }
 
+    // --- Permission check ---
+    if (!await isNotificationPermissionGranted()) {
+      //runs only if not granted and user needs to be prompted. If permission is permanently denied, user is directed to settings. If permission is requestable, rationale dialog is shown first, then permission is requested. If user denies at any point, function exits without scheduling. This ensures we don't spam the user with permission requests and only ask when they set a reminder for the first time.
+      if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+
+      final notifStatus = await Permission.notification.status;
+
+      if (notifStatus.isPermanentlyDenied) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Notification permission denied. Enable it in Settings.',
+            ),
+            action: SnackBarAction(
+              label: 'Settings',
+              onPressed: openAppSettings,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // Denied but requestable — show rationale dialog first
+      if (!context.mounted) return;
+      final bool userAccepted =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder:
+                (_) => AlertDialog(
+                  title: const Text('Enable Reminders?'),
+                  content: const Text(
+                    'To remind you about this task on time, the app needs permission to send notifications.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Not Now'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Continue'),
+                    ),
+                  ],
+                ),
+          ) ??
+          false;
+
+      if (!userAccepted) return;
+
+      final bool granted = await requestNotificationPermission();
+      if (!granted) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text(
+                'Notification permission denied. Enable it in Settings.',
+              ),
+              action: SnackBarAction(
+                label: 'Settings',
+                onPressed: openAppSettings,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     // --- Custom user-defined reminder ---
     if (taskDetails['remainderAmount'] >= 0 &&
         taskDetails['remainderType'] != "none") {
@@ -664,7 +708,6 @@ class NotificationService {
           isFullScreen: false,
           repeatType: taskDetails["repeatType"],
           priority: taskDetails['taskPriority'],
-          context: context,
           id: reminderId,
           title: "Task Reminder",
           body: taskDetails['taskName'],
@@ -746,7 +789,6 @@ class NotificationService {
             isFullScreen: isFullScreen,
             repeatType: taskDetails["repeatType"],
             priority: taskDetails['taskPriority'],
-            context: context,
             id: reminderIds[i],
             title: "Task Reminder",
             body: taskDetails['taskName'],
