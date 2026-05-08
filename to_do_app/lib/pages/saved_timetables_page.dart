@@ -71,7 +71,16 @@ class _SavedTimetablesPageState extends State<SavedTimetablesPage> {
     );
     return Scaffold(
       appBar: AppBar(
-        title: Text("Saved Time Tables"),
+        title: Text(
+          '   Saved Timetables ',
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            letterSpacing: -0.4,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
         actions: [
           PopupMenuButton<String>(
             itemBuilder:

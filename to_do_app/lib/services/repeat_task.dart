@@ -21,14 +21,19 @@ class RepeatTask {
       if (task[7] == null || task[7] == "none") continue;
 
       // Parse due date
-      DateTime? dueDate = DateTimeUtilsHelper.parseDate(task[3]);
+      DateTime? dueDate = DateTimeUtilsHelper.utcDateTimeFromUTCvalues(
+        DateTimeUtilsHelper.combineDateAndTime(
+          DateTimeUtilsHelper.parseDate(task[3]),
+          DateTimeUtilsHelper.parseTime(task[4]),
+        ),
+      );
       if (dueDate == null) continue;
 
       // Add repeated tasks until dueDate is in the future
       int maxRepeats = 1000; // safety cap
       int count = 0;
 
-      while (dueDate!.isBefore(DateTime(today.year, today.month, today.day)) &&
+      while (!dueDate!.isAfter(DateTime(today.year, today.month, today.day)) &&
           count < maxRepeats) {
         dueDate = await _createNextRepeatTask(context, db, task, dueDate);
         count++;

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 //import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -25,11 +24,13 @@ import 'package:to_do_app/services/google_drive_service.dart'
 import 'package:to_do_app/services/google_sign.dart';
 import 'package:to_do_app/services/outlook_sign.dart';
 import 'package:to_do_app/themes/theme_provider.dart';
+import 'package:to_do_app/providers/auth_provider.dart';
 import 'package:to_do_app/providers/grouping_provider.dart';
 import 'package:to_do_app/providers/sorting_provider.dart';
 import 'package:to_do_app/providers/searching_provider.dart';
 import 'services/notification_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:to_do_app/config/app_config.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final ToDoDataBase db = ToDoDataBase();
@@ -80,16 +81,16 @@ Future<void> initLocalTimeZone() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
+  // F-06: key read from --dart-define=SUPABASE_ANON_KEY or AppConfig default
   await Supabase.initialize(
-    url: "https://vzltupelovhgagglqpjf.supabase.co",
-    anonKey:
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6bHR1cGVsb3ZoZ2FnZ2xxcGpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNjAwNjQsImV4cCI6MjA3NTkzNjA2NH0.1QLbTrM0bZiU4UMsKHvUkCAbnXtzZ0MOR5rmf7G9HhY",
+    url: AppConfig.supabaseUrl,
+    anonKey: AppConfig.supabaseAnonKey,
   );
   await Hive.initFlutter();
   var box = await Hive.openBox("mybox");
   Box fileMetaBox = await Hive.openBox("fileMetaBox");
   path = box.path!;
-  await box.clear();
+  //await box.clear();
   final _myBox = Hive.box("mybox");
   if (_myBox.get("TODOLIST") == null && _myBox.get("CATEGORIES") == null) {
     db.createInitialData();
@@ -99,13 +100,17 @@ void main() async {
   // WidgetsFlutterBinding.ensureInitialized();
   await GoogleAuthService.initApp();
   await OutlookAuthService.initialize();
+
+  // F-07: initialise AuthProvider with resolved sign-in state
+  final authProvider = AuthProvider(
+    isGoogleSignedIn: GoogleAuthService.currentUser != null,
+    isOutlookSignedIn: OutlookAuthService.accessToken != null,
+    displayName: GoogleAuthService.currentUser?.displayName ?? '',
+  );
+
   // TEST NOTIFICATION
   try {
     await NotificationService.init();
-    // await NotificationService.showNotification(
-    //   title: "Test Notification",
-    //   body: "This is a test.",
-    // );
   } catch (e) {
     print("----------Notification error: $e");
   }
@@ -120,6 +125,8 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FileSearchProvider()),
         ChangeNotifierProvider(create: (_) => FileSortProvider()),
         ChangeNotifierProvider(create: (_) => ViewProvider()),
+        // F-07: central auth state provider
+        ChangeNotifierProvider.value(value: authProvider),
       ],
       child: const MyApp(),
     ),

@@ -59,6 +59,7 @@ class NotificationService {
     return true;
   }
 
+  //show android dialog to request notification permission, returns true if granted, false if denied or permanently denied
   static Future<bool> requestNotificationPermission() async {
     bool granted = false;
 

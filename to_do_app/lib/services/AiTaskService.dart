@@ -1,6 +1,7 @@
 // lib/services/ai_task_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:to_do_app/config/app_config.dart';
 
 class AiTaskService {
   static const String _endpoint =
@@ -20,7 +21,11 @@ class AiTaskService {
     try {
       final response = await http.post(
         Uri.parse(_endpoint),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          // F-05: authenticate the edge function call with the Supabase anon key
+          'Authorization': 'Bearer ${AppConfig.supabaseAnonKey}',
+        },
         body: jsonEncode(body),
       );
 

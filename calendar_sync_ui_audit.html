@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UI/UX Audit — Calendar Sync Page</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #222637;
+      --border: #2e3249;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --danger: #ff5c5c;
+      --warn: #ffb347;
+      --low: #4fc3f7;
+      --text: #e8eaf0;
+      --muted: #8b90a8;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px 80px;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .header .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), #9c6fff);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #e8eaf0, #9c6fff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 10px;
+    }
+    .header p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+    .header .meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .header .meta span { display: flex; align-items: center; gap: 6px; }
+
+    /* ── Section title ── */
+    .section {
+      margin-bottom: 40px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-number {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), #9c6fff);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .section-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      font-size: 14px;
+    }
+    thead tr {
+      background: var(--surface2);
+    }
+    th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    td {
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      vertical-align: top;
+      color: var(--text);
+      line-height: 1.55;
+    }
+    tr:hover td { background: rgba(108, 99, 255, 0.04); }
+
+    /* ── Severity badges ── */
+    .badge-sev {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .sev-high   { background: rgba(255, 92, 92, 0.15);  color: var(--danger); border: 1px solid rgba(255,92,92,0.3); }
+    .sev-medium { background: rgba(255, 179, 71, 0.15); color: var(--warn);   border: 1px solid rgba(255,179,71,0.3); }
+    .sev-low    { background: rgba(79, 195, 247, 0.15); color: var(--low);    border: 1px solid rgba(79,195,247,0.3); }
+
+    /* ── Missing features cards ── */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-icon {
+      font-size: 22px;
+      margin-bottom: 10px;
+    }
+    .card h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+    .card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .card .impact {
+      margin-top: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--accent2);
+    }
+
+    /* ── Priority list ── */
+    .priority-list { list-style: none; }
+    .priority-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .priority-list li:hover { border-color: var(--accent); }
+    .priority-label {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .p-critical { background: rgba(255,92,92,0.15);   color: var(--danger); border: 1px solid rgba(255,92,92,0.3); }
+    .p-high     { background: rgba(255,179,71,0.15);  color: var(--warn);   border: 1px solid rgba(255,179,71,0.3); }
+    .p-medium   { background: rgba(108,99,255,0.15);  color: #a89cff;       border: 1px solid rgba(108,99,255,0.3); }
+    .p-low      { background: rgba(79,195,247,0.15);  color: var(--low);    border: 1px solid rgba(79,195,247,0.3); }
+
+    /* ── Tile sketch ── */
+    .sketch-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .sketch-wrap h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .tile-sketch {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      max-width: 460px;
+      margin: 0 auto;
+      font-size: 14px;
+    }
+    .tile-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+    .tile-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 900;
+      color: #fff;
+    }
+    .google-icon  { background: linear-gradient(135deg, #4285f4, #34a853); }
+    .local-icon   { background: linear-gradient(135deg, #00d4aa, #0095a8); }
+    .outlook-icon { background: linear-gradient(135deg, #0078d4, #00bcf2); }
+    .tile-header-info h4 { font-size: 15px; font-weight: 700; }
+    .tile-header-info span { font-size: 12px; color: var(--accent2); }
+    .tile-body { padding: 14px 16px; }
+    .tile-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 0;
+    }
+    .tile-row span { font-size: 13px; color: var(--muted); }
+    .toggle-on {
+      width: 44px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 12px;
+      position: relative;
+    }
+    .toggle-on::after {
+      content: '';
+      position: absolute;
+      right: 3px;
+      top: 3px;
+      width: 18px;
+      height: 18px;
+      background: #fff;
+      border-radius: 50%;
+    }
+    .tile-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      gap: 8px;
+    }
+    .btn-ghost {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .btn-primary {
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+    .sync-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--accent2);
+      background: rgba(0, 212, 170, 0.1);
+      border: 1px solid rgba(0,212,170,0.3);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+    .dot { width: 6px; height: 6px; background: var(--accent2); border-radius: 50%; }
+
+    /* ── Summary bar ── */
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 40px;
+    }
+    .summary-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      text-align: center;
+    }
+    .summary-item .count {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .summary-item .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .c-critical { color: var(--danger); }
+    .c-high     { color: var(--warn); }
+    .c-medium   { color: #a89cff; }
+    .c-low      { color: var(--low); }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #a89cff;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge">UI / UX Audit Report</div>
+    <h1>Calendar Sync Page</h1>
+    <p>calender_sync_page.dart &nbsp;·&nbsp; google_calendar_tile.dart &nbsp;·&nbsp; local_calendar_tile.dart &nbsp;·&nbsp; outlook_calendar_tile.dart</p>
+    <div class="meta">
+      <span>📅 Generated: May 8, 2026</span>
+      <span>📁 to_do_app / lib / pages</span>
+      <span>🎯 Flutter · Material 3</span>
+    </div>
+  </div>
+
+  <!-- Summary bar -->
+  <div class="summary">
+    <div class="summary-item">
+      <div class="count c-critical">3</div>
+      <div class="label">Critical</div>
+    </div>
+    <div class="summary-item">
+      <div class="count c-high">5</div>
+      <div class="label">High</div>
+    </div>
+    <div class="summary-item">
+      <div class="count c-medium">7</div>
+      <div class="label">Medium</div>
+    </div>
+    <div class="summary-item">
+      <div class="count c-low">4</div>
+      <div class="label">Low</div>
+    </div>
+  </div>
+
+  <!-- Section 1: AppBar -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <h2>AppBar</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Severity</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Hardcoded centering hack</td>
+          <td><span class="badge-sev sev-medium">Medium</span></td>
+          <td><code>Padding(horizontal: 70.0)</code> fakes centering and breaks on different screen sizes. Replace with <code>centerTitle: true</code> on the AppBar.</td>
+        </tr>
+        <tr>
+          <td>Typo in page title</td>
+          <td><span class="badge-sev sev-low">Low</span></td>
+          <td>"Calender" is misspelled throughout the file and the strings passed to tile widgets. Should be "Calendar" everywhere.</td>
+        </tr>
+        <tr>
+          <td>No visual identity in AppBar</td>
+          <td><span class="badge-sev sev-low">Low</span></td>
+          <td>A calendar icon (<code>Icons.calendar_month</code>) as a leading or action icon would reinforce context at a glance.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 2: Page Layout -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <h2>Page Layout &amp; Visual Hierarchy</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Severity</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Flat heading — no visual anchoring</td>
+          <td><span class="badge-sev sev-high">High</span></td>
+          <td>The "Select Calendar Sync method" text is plain <code>fontSize: 24</code> with no weight, no icon, and no color contrast. It reads like body text rather than a section heading.</td>
+        </tr>
+        <tr>
+          <td>No separation between description and tiles</td>
+          <td><span class="badge-sev sev-medium">Medium</span></td>
+          <td>The grey description text runs visually into the first tile with only a <code>SizedBox(height: 30)</code>. A subtle <code>Divider</code> or a slightly larger gap would create a clear content zone.</td>
+        </tr>
+        <tr>
+          <td>Three tiles are visually identical</td>
+          <td><span class="badge-sev sev-high">High</span></td>
+          <td>No icons and no brand colors — Google, Local, and Outlook tiles cannot be distinguished at a glance. Users should recognize each provider instantly.</td>
+        </tr>
+        <tr>
+          <td>No scroll protection</td>
+          <td><span class="badge-sev sev-medium">Medium</span></td>
+          <td>The body is a plain <code>Column</code> with no <code>SingleChildScrollView</code>. On small screens or with the soft keyboard open, this will overflow and throw a render error.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 3: Tile Components -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <h2>Calendar Tiles (all three components)</h2>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Severity</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Raw <code>Border.all()</code> with no color</td>
+          <td><span class="badge-sev sev-medium">Medium</span></td>
+          <td>Defaults to black, which clashes in dark themes. Use <code>Border.all(color: Theme.of(context).colorScheme.outline)</code> to respect the active theme.</td>
+        </tr>
+        <tr>
+          <td>No provider icon</td>
+          <td><span class="badge-sev sev-high">High</span></td>
+          <td>The biggest visual miss. Each tile needs an icon: the Google "G" logo, <code>Icons.calendar_today</code> for local, and a Microsoft/Outlook icon for Outlook.</td>
+        </tr>
+        <tr>
+          <td>Duplicate label text</td>
+          <td><span class="badge-sev sev-medium">Medium</span></td>
+          <td>The tile title says "sync with google calendar" and the <code>SwitchListTile</code> inside also says "Sync with google calendars" — the same information is repeated twice inside the same card.</td>
+        </tr>
+        <tr>
+          <td>Refresh button inside <code>SwitchListTile</code> title Row</td>
+          <td><span class="badge-sev sev-medium">Medium</span></td>
+          <td>Placing an <code>IconButton</code> inside <code>title:</code> is non-standard and visually awkward. Move it to the tile footer as a labelled button (e.g., "Manage →") or as a standalone trailing icon button with a tooltip.</td>
+        </tr>
+        <tr>
+          <td>No connection status or account info</td>
+          <td><span class="badge-sev sev-high">High</span></td>
+          <td>After enabling sync, there is no indication of which account is connected. The user cannot tell if the sync is actually working. Show "Connected as user@gmail.com" or a "Not connected" label.</td>
+        </tr>
+        <tr>
+          <td>No loading state during async operations</td>
+          <td><span class="badge-sev sev-high">High</span></td>
+          <td>Auth and calendar fetching can take 1–3 seconds. The switch toggles instantly but nothing visible happens. Add a <code>CircularProgressIndicator</code> or disable the switch while the operation is in flight.</td>
+        </tr>
+        <tr>
+          <td>Raw exception text shown to user</td>
+          <td><span class="badge-sev sev-medium">Medium</span></td>
+          <td><code>"Error fetching events: $e"</code> dumps a raw Dart exception in a SnackBar. Replace with a friendly message: "Couldn't connect. Check your internet and try again."</td>
+        </tr>
+        <tr>
+          <td>Inconsistent tile title casing + typo</td>
+          <td><span class="badge-sev sev-low">Low</span></td>
+          <td>"Sync with local calendar app" vs "sync with google calendar" vs "sync with <strong>outtlook</strong> calendar" — mixed capitalisation and a double-t typo in "outtlook".</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 4: Missing UX Patterns -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <h2>Missing UX Patterns</h2>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🔌</div>
+        <h4>Disconnected Empty State</h4>
+        <p>Each tile in its "off" state should show a muted icon and a "Not connected" label so the user immediately understands the current state without interacting.</p>
+        <div class="impact">Impact: High</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h4>Connected State Visual</h4>
+        <p>When sync is enabled, show a green badge or colored left-border, plus the account email. Gives the user confidence the feature is active.</p>
+        <div class="impact">Impact: High</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🕐</div>
+        <h4>Last Synced Timestamp</h4>
+        <p>"Last synced 5 min ago" builds trust that the sync is functioning correctly, and gives the user a reference point for data freshness.</p>
+        <div class="impact">Impact: Medium</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">💬</div>
+        <h4>Sync Method Description</h4>
+        <p>A single subtitle per tile — e.g., "Push tasks to Google Calendar as events" — reduces user anxiety about what enabling this actually does.</p>
+        <div class="impact">Impact: Medium</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">✨</div>
+        <h4>Entry Animations</h4>
+        <p>Tiles appear instantly with no transition. A subtle staggered <code>FadeTransition</code> or <code>SlideTransition</code> on page entry adds polish.</p>
+        <div class="impact">Impact: Low</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎨</div>
+        <h4>Brand Colors per Provider</h4>
+        <p>Use a faint tinted left-border or icon tint per tile (blue for Google, cyan for local, Microsoft blue for Outlook) to create instant visual identity.</p>
+        <div class="impact">Impact: High</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 5: Priority List -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <h2>Quick-Win Priority List</h2>
+    </div>
+    <ul class="priority-list">
+      <li><span class="priority-label p-critical">Critical</span> Add provider icons — Google G, calendar icon, Outlook M — to each tile header</li>
+      <li><span class="priority-label p-critical">Critical</span> Show a loading indicator (<code>CircularProgressIndicator</code>) during async auth / calendar fetch</li>
+      <li><span class="priority-label p-critical">Critical</span> Display connected account name or "Not connected" status in each tile</li>
+      <li><span class="priority-label p-high">High</span> Add brand-tinted left border or icon color per provider for instant visual identity</li>
+      <li><span class="priority-label p-high">High</span> Move the refresh <code>IconButton</code> out of <code>SwitchListTile title:</code> into a proper tile footer</li>
+      <li><span class="priority-label p-high">High</span> Replace raw <code>$e</code> exception strings with user-friendly error messages in SnackBars</li>
+      <li><span class="priority-label p-high">High</span> Wrap page body in <code>SingleChildScrollView</code> to prevent overflow on small screens</li>
+      <li><span class="priority-label p-high">High</span> Strengthen the page heading — add font weight, an icon, or a color accent</li>
+      <li><span class="priority-label p-medium">Medium</span> Fix <code>Border.all()</code> to use <code>Theme.of(context).colorScheme.outline</code></li>
+      <li><span class="priority-label p-medium">Medium</span> Remove duplicate label text inside each tile (tile title vs. SwitchListTile label)</li>
+      <li><span class="priority-label p-medium">Medium</span> Replace <code>Padding(horizontal: 70.0)</code> AppBar hack with <code>centerTitle: true</code></li>
+      <li><span class="priority-label p-medium">Medium</span> Add a one-line description subtitle to each tile</li>
+      <li><span class="priority-label p-low">Low</span> Fix all "Calender" → "Calendar" and "outtlook" → "Outlook" typos</li>
+      <li><span class="priority-label p-low">Low</span> Unify tile title casing (sentence case across all three)</li>
+      <li><span class="priority-label p-low">Low</span> Add a last-synced timestamp to active tiles</li>
+      <li><span class="priority-label p-low">Low</span> Add staggered fade-in animation on page entry for tiles</li>
+    </ul>
+  </div>
+
+  <!-- Section 6: Tile Sketch -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">6</div>
+      <h2>Suggested Tile Structure</h2>
+    </div>
+    <div class="sketch-wrap">
+      <h3>After — Google Calendar tile (connected state)</h3>
+      <div class="tile-sketch">
+        <div class="tile-header">
+          <div class="tile-icon google-icon">G</div>
+          <div class="tile-header-info">
+            <h4>Google Calendar</h4>
+            <span>
+              <span class="sync-badge"><span class="dot"></span> Connected · joe@gmail.com</span>
+            </span>
+          </div>
+        </div>
+        <div class="tile-body">
+          <div style="font-size:13px; color: var(--muted); margin-bottom:12px;">
+            Push tasks to Google Calendar as events. Changes sync automatically.
+          </div>
+          <div class="tile-row">
+            <span>Sync tasks as events</span>
+            <div class="toggle-on"></div>
+          </div>
+          <div class="tile-row">
+            <span style="font-size:12px; color:var(--muted);">Last synced 3 min ago</span>
+          </div>
+        </div>
+        <div class="tile-footer">
+          <button class="btn-ghost">Disconnect</button>
+          <button class="btn-primary">Manage →</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="tile-sketch" style="opacity:0.65;">
+          <div class="tile-header">
+            <div class="tile-icon local-icon">📅</div>
+            <div class="tile-header-info">
+              <h4>Local Calendar</h4>
+              <span style="font-size:12px; color:var(--muted);">Not connected</span>
+            </div>
+          </div>
+          <div class="tile-body">
+            <div style="font-size:13px; color: var(--muted); margin-bottom:12px;">Sync with your device's built-in calendar app.</div>
+            <div class="tile-row">
+              <span>Enable sync</span>
+              <div style="width:44px;height:24px;background:var(--border);border-radius:12px;position:relative;"><div style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#aaa;border-radius:50%;"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tile-sketch" style="opacity:0.65;">
+          <div class="tile-header">
+            <div class="tile-icon outlook-icon">M</div>
+            <div class="tile-header-info">
+              <h4>Outlook Calendar</h4>
+              <span style="font-size:12px; color:var(--muted);">Not connected</span>
+            </div>
+          </div>
+          <div class="tile-body">
+            <div style="font-size:13px; color: var(--muted); margin-bottom:12px;">Sync with your Microsoft Outlook calendar.</div>
+            <div class="tile-row">
+              <span>Enable sync</span>
+              <div style="width:44px;height:24px;background:var(--border);border-radius:12px;position:relative;"><div style="position:absolute;left:3px;top:3px;width:18px;height:18px;background:#aaa;border-radius:50%;"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Generated for <strong>to_do_app</strong> · calender_sync_page.dart · Flutter / Material 3
+  </div>
+
+</div>
+</body>
+</html>

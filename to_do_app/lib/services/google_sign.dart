@@ -1,5 +1,4 @@
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
@@ -8,24 +7,22 @@ class GoogleAuthService {
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       'email',
-      'https://www.googleapis.com/auth/calendar',
+      // F-08: calendar.events is sufficient; avoids requesting full calendar settings access
+      'https://www.googleapis.com/auth/calendar.events',
       'https://www.googleapis.com/auth/drive.file',
     ],
   );
 
-  static final _storage = FlutterSecureStorage();
   static GoogleSignInAccount? currentUser;
   static gcal.CalendarApi? calendarApi;
   static drive.DriveApi? driveApi;
 
+  // F-02: silent restore only at startup; interactive sign-in triggered by user action
   static Future<void> initApp() async {
     try {
-      // App startup (AuthGate)
-      GoogleSignInAccount? user = await signInSilently();
-      if (user == null) user = await signIn();
-      currentUser = user;
+      currentUser = await signInSilently();
     } catch (e) {
-      print("Failed to initialize notifications: $e");
+      print("Failed to restore Google session: $e");
     }
   }
 
@@ -104,7 +101,8 @@ class GoogleAuthService {
 
 class _GoogleAuthClient extends http.BaseClient {
   final Map<String, String> headers;
-  final http.Client _inner = http.Client();
+  // B-03: static singleton prevents a new connection pool per API call
+  static final http.Client _inner = http.Client();
 
   _GoogleAuthClient(this.headers);
 

@@ -10,11 +10,14 @@ class FilterTasksService {
     List<List<dynamic>> filteredTasks =
         toDoList.where((task) {
           //return true;
-          DateTime now = DateTime.now();
+          DateTime now = DateTime.now().toUtc();
 
-          DateTime? taskTime = DateTimeUtilsHelper.parseTime(task[4]);
-          DateTime taskDate =
-              DateTimeUtilsHelper.parseDate(task[3]) ?? DateTime(1970, 01, 01);
+          DateTime? taskDate = DateTimeUtilsHelper.utcDateTimeFromUTCvalues(
+            DateTimeUtilsHelper.combineDateAndTime(
+              DateTimeUtilsHelper.parseDate(task[3]),
+              DateTimeUtilsHelper.parseTime(task[4]),
+            ),
+          );
           // if (task[3] != null && task[3] != "0000-00-00") {
           //   try {
           //     taskDate = DateFormat('yyyy-MM-dd').parse(task[3]!);
@@ -40,20 +43,20 @@ class FilterTasksService {
                         (taskDate.isAtSameMomentAs(
                               DateTime(now.year, now.month, now.day),
                             ) &&
-                            (taskTime == null ||
-                                (taskTime.hour > now.hour ||
-                                    (taskTime.hour == now.hour &&
-                                        taskTime.minute > now.minute)))))) ||
+                            (taskDate == null ||
+                                (taskDate.hour > now.hour ||
+                                    (taskDate.hour == now.hour &&
+                                        taskDate.minute > now.minute)))))) ||
                 (filterData!["categories"].contains("Missed") &&
                     (task[1] == false) &&
                     (taskDate.isBefore(now) ||
                         (taskDate.isAtSameMomentAs(
                               DateTime(now.year, now.month, now.day),
                             ) &&
-                            (taskTime != null &&
-                                (taskTime.hour < now.hour ||
-                                    (taskTime.hour == now.hour &&
-                                        taskTime.minute < now.minute))))))) {
+                            (taskDate != null &&
+                                (taskDate.hour < now.hour ||
+                                    (taskDate.hour == now.hour &&
+                                        taskDate.minute < now.minute))))))) {
               return true;
             } else {
               return false;
@@ -73,13 +76,14 @@ class FilterTasksService {
             }
 
             return false;
-          } else if (!isSameDay(taskTime, DateTime(1970, 01, 01))) {
+          } else if (!isSameDay(taskDate, DateTime(1970, 01, 01))) {
             for (DateTime date in filterData!["selectedDueDates"]) {
+              date = date.toUtc();
               //print("filter date:$date  task date:" + taskDate.toString());
               if ((filterData!["selectedFilter"] == "Selected_dates")) {
                 // Ignore invalid dates for dueDate filter
                 if (!isSameDay(
-                      DateTime(date.year, date.month, date.day),
+                      DateTime.utc(date.year, date.month, date.day),
                       taskDate,
                     ) ||
                     !isCategoryMatched(task, filterData)) {
@@ -87,14 +91,14 @@ class FilterTasksService {
                 }
               } else if ((filterData!["selectedFilter"] == "Before")) {
                 if (!taskDate.isBefore(
-                      DateTime(date.year, date.month, date.day),
+                      DateTime.utc(date.year, date.month, date.day),
                     ) ||
                     !isCategoryMatched(task, filterData)) {
                   return false;
                 }
               } else if ((filterData!["selectedFilter"] == "After")) {
                 if (!taskDate.isAfter(
-                      DateTime(date.year, date.month, date.day),
+                      DateTime.utc(date.year, date.month, date.day),
                     ) ||
                     !isCategoryMatched(task, filterData)) {
                   return false;

@@ -71,7 +71,7 @@ class _MyDrawerState extends State<MyDrawer> {
                         ),
                         Text(
                           GoogleAuthService.currentUser?.displayName ??
-                              'Signed In',
+                              'Sign In',
 
                           style: TextStyle(color: Colors.white, fontSize: 20),
                         ),

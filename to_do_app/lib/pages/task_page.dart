@@ -792,143 +792,176 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                           ),
 
                       children: [
-                        Text(
-                          'Tasks',
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        if (groupTasks.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text(
-                              "No tasks",
-                              style: TextStyle(color: Colors.grey),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Tasks',
+                              textAlign: TextAlign.start,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
                             ),
-                          )
-                        else
-                          ReorderableListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: groupTasks.length,
-                            onReorder: (oldIndex, newIndex) {
-                              if (newIndex > oldIndex) newIndex -= 1;
-                              final movingTaskId = groupTasks[oldIndex][12];
-                              final destinationTaskID =
-                                  groupTasks[newIndex][12];
-
-                              oldIndex = db.toDoList.indexWhere(
-                                (task) => task[12] == movingTaskId,
-                              );
-                              newIndex = db.toDoList.indexWhere(
-                                (task) => task[12] == destinationTaskID,
-                              );
-
-                              final task = db.toDoList.removeAt(oldIndex);
-                              db.toDoList.insert(newIndex, task);
-                              db.updateDataBase();
-                              sortingProvider.setMode(SortingMode.manual);
-
-                              setState(() {});
-                            },
-                            itemBuilder: (context, index) {
-                              final task = groupTasks[index];
-                              // if (task[17]) {
-                              //   return SyncTile(
-                              //     key: ValueKey('${task[15]}_${task[12]}'),
-                              //     task: task,
-                              //   );
-                              // }
-
-                              return TaskTile(
-                                source: task[17],
-                                disableCompleted: () {
-                                  setState(() {
-                                    isDuringAnimation = !isDuringAnimation;
-                                  });
-                                },
-                                key: ValueKey(
-                                  '${task[0]}_${task[12]}_${task.toString()}',
+                            if (groupTasks.isEmpty)
+                              Center(
+                                child: const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    "No tasks",
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
                                 ),
-                                initialSubtasks:
-                                    task[13] != null
-                                        ? (task[13] as List<dynamic>)
-                                            .map(
-                                              (e) => Map<String, dynamic>.from(
-                                                e as Map,
-                                              ),
-                                            )
-                                            .toList()
-                                        : [],
-                                index: db.toDoList.indexOf(task),
-                                isStarred: task[10] == "true",
-                                taskName: task[0],
-                                taskCompleted: task[1],
-                                taskNote: task[2],
-                                dueDate: DateTimeUtilsHelper.parseDate(task[3]),
-                                dueTime:
-                                    task[4] != "00:00"
-                                        ? DateTimeUtilsHelper.parseTime(task[4])
-                                        : null,
-                                taskCategory: task[5],
-                                taskPriority: task[6],
-                                repeatType: task[7],
-                                remainderAmount: task[8],
-                                remainderType: task[9],
-                                onChanged:
-                                    (index, value) =>
-                                        checkBoxChanged(value, index),
-                                deleteFunction:
-                                    (context) =>
-                                        deleteTask(db.toDoList.indexOf(task)),
-                                onEdit:
-                                    (index, taskDetails) =>
-                                        editTask(index, taskDetails),
-                                repeatTypes: repeatTypes,
-                                priorityTypes: priorityTypes,
-                                remainderTypes: remainderTypes,
-                                categoryTypes: db.categories,
-                              );
-                            },
-                          ),
+                              )
+                            else
+                              ReorderableListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: groupTasks.length,
+                                onReorder: (oldIndex, newIndex) {
+                                  if (newIndex > oldIndex) newIndex -= 1;
+                                  final movingTaskId = groupTasks[oldIndex][12];
+                                  final destinationTaskID =
+                                      groupTasks[newIndex][12];
 
-                        if (groupKey == "today")
-                          Column(
-                            children: [
-                              SizedBox(height: 16),
-                              Text(
-                                'Calendar Events',
-                                textAlign: TextAlign.start,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
+                                  oldIndex = db.toDoList.indexWhere(
+                                    (task) => task[12] == movingTaskId,
+                                  );
+                                  newIndex = db.toDoList.indexWhere(
+                                    (task) => task[12] == destinationTaskID,
+                                  );
+
+                                  final task = db.toDoList.removeAt(oldIndex);
+                                  db.toDoList.insert(newIndex, task);
+                                  db.updateDataBase();
+                                  sortingProvider.setMode(SortingMode.manual);
+
+                                  setState(() {});
+                                },
+                                itemBuilder: (context, index) {
+                                  final task = groupTasks[index];
+                                  // if (task[17]) {
+                                  //   return SyncTile(
+                                  //     key: ValueKey('${task[15]}_${task[12]}'),
+                                  //     task: task,
+                                  //   );
+                                  // }
+
+                                  return Padding(
+                                    key: ValueKey(
+                                      '${task[0]}_${task[12]}_${task.toString()}',
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 4,
+                                    ),
+                                    child: TaskTile(
+                                      source: task[17],
+                                      disableCompleted: () {
+                                        setState(() {
+                                          isDuringAnimation =
+                                              !isDuringAnimation;
+                                        });
+                                      },
+                                      initialSubtasks:
+                                          task[13] != null
+                                              ? (task[13] as List<dynamic>)
+                                                  .map(
+                                                    (e) => Map<
+                                                      String,
+                                                      dynamic
+                                                    >.from(e as Map),
+                                                  )
+                                                  .toList()
+                                              : [],
+                                      index: db.toDoList.indexOf(task),
+                                      isStarred: task[10] == "true",
+                                      taskName: task[0],
+                                      taskCompleted: task[1],
+                                      taskNote: task[2],
+                                      dueDate: DateTimeUtilsHelper.parseDate(
+                                        task[3],
+                                      ),
+                                      dueTime:
+                                          task[4] != "00:00"
+                                              ? DateTimeUtilsHelper.parseTime(
+                                                task[4],
+                                              )
+                                              : null,
+                                      taskCategory: task[5],
+                                      taskPriority: task[6],
+                                      repeatType: task[7],
+                                      remainderAmount: task[8],
+                                      remainderType: task[9],
+                                      onChanged:
+                                          (index, value) =>
+                                              checkBoxChanged(value, index),
+                                      deleteFunction:
+                                          (context) => deleteTask(
+                                            db.toDoList.indexOf(task),
+                                          ),
+                                      onEdit:
+                                          (index, taskDetails) =>
+                                              editTask(index, taskDetails),
+                                      repeatTypes: repeatTypes,
+                                      priorityTypes: priorityTypes,
+                                      remainderTypes: remainderTypes,
+                                      categoryTypes: db.categories,
+                                    ),
+                                  );
+                                },
+                              ),
+
+                            if (groupKey == "today")
+                              Column(
+                                children: [
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Calendar Events',
+                                    textAlign: TextAlign.start,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              SizedBox.shrink(),
+                            if (groupKey == "today" && !showCompletedTasks)
+                              ...db.localCalTasks
+                                  .where(_isCalEventForToday)
+                                  .map((e) => SyncTile(task: e))
+                            else
+                              SizedBox.shrink(),
+                            if (groupKey == "today" && !showCompletedTasks)
+                              ...db.googleCalTasks
+                                  .where(_isCalEventForToday)
+                                  .map((e) => SyncTile(task: e))
+                            else
+                              SizedBox.shrink(),
+                            if (groupKey == "today" && !showCompletedTasks)
+                              ...db.outlookCalTasks
+                                  .where(_isCalEventForToday)
+                                  .map((e) => SyncTile(task: e))
+                            else
+                              SizedBox.shrink(),
+                            if (db.localCalTasks.isEmpty &&
+                                db.outlookCalTasks.isEmpty &&
+                                db.googleCalTasks.isEmpty &&
+                                groupKey == 'today')
+                              Center(
+                                child: const Padding(
+                                  padding: EdgeInsets.all(16.0),
+                                  child: Text(
+                                    "No calendar events",
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
                                 ),
                               ),
-                            ],
-                          )
-                        else
-                          SizedBox.shrink(),
-                        if (groupKey == "today" && !showCompletedTasks)
-                          ...db.localCalTasks
-                              .where(_isCalEventForToday)
-                              .map((e) => SyncTile(task: e))
-                        else
-                          SizedBox.shrink(),
-                        if (groupKey == "today" && !showCompletedTasks)
-                          ...db.googleCalTasks
-                              .where(_isCalEventForToday)
-                              .map((e) => SyncTile(task: e))
-                        else
-                          SizedBox.shrink(),
-                        if (groupKey == "today" && !showCompletedTasks)
-                          ...db.outlookCalTasks
-                              .where(_isCalEventForToday)
-                              .map((e) => SyncTile(task: e))
-                        else
-                          SizedBox.shrink(),
-                        SizedBox(height: 30),
+                            SizedBox(height: 30),
+                          ],
+                        ),
                       ],
                     ),
                   ),

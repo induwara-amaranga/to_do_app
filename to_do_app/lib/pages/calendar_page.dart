@@ -324,8 +324,14 @@ class _CalendarPageState extends State<CalendarPage> {
       bottomNavigationBar: TaskBottomNavBar(current: 0),
       appBar: AppBar(
         title: Text(
-          'Calendar',
-          style: TextStyle(color: Theme.of(context).colorScheme.primary),
+          '         Calendar',
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            letterSpacing: -0.4,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ),
       body: Column(
@@ -420,42 +426,53 @@ class _CalendarPageState extends State<CalendarPage> {
                     ),
                   ),
                 ...tasksForSelectedDay.map((task) {
-                  return TaskTile(
-                    source: task[17],
-                    disableCompleted: () {
-                      setState(() {});
-                    },
-                    key: ValueKey('${task[0]}_${task[12]}_${task.toString()}'),
-                    initialSubtasks:
-                        task[13] != null
-                            ? (task[13] as List<dynamic>)
-                                .map((e) => Map<String, dynamic>.from(e as Map))
-                                .toList()
-                            : [],
-                    index: toDoList.indexOf(task),
-                    isStarred: task[10] == "true",
-                    taskName: task[0],
-                    taskCompleted: task[1],
-                    taskNote: task[2],
-                    dueDate: DateTimeUtilsHelper.parseDate(task[3]),
-                    dueTime:
-                        task[4] != "00:00"
-                            ? DateTimeUtilsHelper.parseTime(task[4])
-                            : null,
-                    taskCategory: task[5],
-                    taskPriority: task[6],
-                    repeatType: task[7],
-                    remainderAmount: task[8],
-                    remainderType: task[9],
-                    onChanged: (index, value) => checkBoxChanged(value, index),
-                    deleteFunction:
-                        (context) => deleteTask(toDoList.indexOf(task)),
-                    onEdit:
-                        (index, taskDetails) => editTask(index, taskDetails),
-                    repeatTypes: repeatTypes,
-                    priorityTypes: priorityTypes,
-                    remainderTypes: remainderTypes,
-                    categoryTypes: widget.db.categories,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 8,
+                    ),
+                    child: TaskTile(
+                      source: task[17],
+                      disableCompleted: () {
+                        setState(() {});
+                      },
+                      key: ValueKey(
+                        '${task[0]}_${task[12]}_${task.toString()}',
+                      ),
+                      initialSubtasks:
+                          task[13] != null
+                              ? (task[13] as List<dynamic>)
+                                  .map(
+                                    (e) => Map<String, dynamic>.from(e as Map),
+                                  )
+                                  .toList()
+                              : [],
+                      index: toDoList.indexOf(task),
+                      isStarred: task[10] == "true",
+                      taskName: task[0],
+                      taskCompleted: task[1],
+                      taskNote: task[2],
+                      dueDate: DateTimeUtilsHelper.parseDate(task[3]),
+                      dueTime:
+                          task[4] != "00:00"
+                              ? DateTimeUtilsHelper.parseTime(task[4])
+                              : null,
+                      taskCategory: task[5],
+                      taskPriority: task[6],
+                      repeatType: task[7],
+                      remainderAmount: task[8],
+                      remainderType: task[9],
+                      onChanged:
+                          (index, value) => checkBoxChanged(value, index),
+                      deleteFunction:
+                          (context) => deleteTask(toDoList.indexOf(task)),
+                      onEdit:
+                          (index, taskDetails) => editTask(index, taskDetails),
+                      repeatTypes: repeatTypes,
+                      priorityTypes: priorityTypes,
+                      remainderTypes: remainderTypes,
+                      categoryTypes: widget.db.categories,
+                    ),
                   );
                 }),
                 if (calTasksForSelectedDay.isNotEmpty)
