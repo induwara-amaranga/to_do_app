@@ -1,240 +1,227 @@
 import 'package:flutter/material.dart';
-//import 'package:Outlookapis/calendar/v3.dart' as gcal;
+import 'package:provider/provider.dart';
 import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/pages/Outlook_calendar_sync_page.dart';
-import 'package:to_do_app/pages/local_calendar_sync_page.dart';
+import 'package:to_do_app/providers/auth_provider.dart';
 import 'package:to_do_app/services/Outlook_calendar_service.dart';
-import 'package:to_do_app/services/local_calendar_service.dart';
 import 'package:to_do_app/services/outlook_sign.dart';
 
 class OutlookCalendarTile extends StatefulWidget {
   final ToDoDataBase db;
-  final String title;
 
-  const OutlookCalendarTile({super.key, required this.title, required this.db});
+  const OutlookCalendarTile({super.key, required this.db});
 
   @override
-  State<OutlookCalendarTile> createState() => _CalendarTileState();
+  State<OutlookCalendarTile> createState() => _OutlookCalendarTileState();
 }
 
-class _CalendarTileState extends State<OutlookCalendarTile> {
-  bool isSyncTrue = false;
+class _OutlookCalendarTileState extends State<OutlookCalendarTile> {
+  bool _isLoading = false;
 
-  late ToDoDataBase db;
+  static const _brandColor = Color(0xFF0078D4);
 
-  @override
-  void initState() {
-    super.initState();
-    db = widget.db;
-    // ✅ Calculate ONCE here, not in build()
-    isSyncTrue =
-        db.syncToCalendars["outlook"] != "none" ||
-        db.viewOnlyCalendars["outlook"]!.isNotEmpty;
+  Future<void> _fetchAndNavigate() async {
+    setState(() => _isLoading = true);
+    try {
+      final authProvider = context.read<AuthProvider>();
+
+      // Ensure signed in — silent restore first, interactive if needed
+      if (!authProvider.isOutlookSignedIn ||
+          OutlookAuthService.accessToken == null) {
+        // initialize() calls init() + acquireTokenSilently() internally
+        final silentSuccess = await OutlookAuthService.initialize();
+
+        if (!silentSuccess) {
+          // _pca is already initialised by initialize(); go straight to interactive
+          final token = await OutlookAuthService.signIn();
+
+          if (!mounted) return;
+          if (token == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Outlook sign-in was cancelled."),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+            return;
+          }
+        }
+
+        authProvider.setOutlookSignedIn(true);
+      }
+
+      List<Map<String, dynamic>> calendars = [];
+      if (OutlookAuthService.accessToken != null) {
+        calendars = await OutlookCalendarService.getAllCalendars();
+      }
+
+      if (!mounted) return;
+
+      if (calendars.isNotEmpty) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => OutlookCalendarSyncPage(
+                  calendars: calendars,
+                  db: widget.db,
+                  accountName: "Outlook Account",
+                ),
+          ),
+        );
+        if (mounted) setState(() {});
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("No Outlook calendars found on this account."),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't connect to Outlook Calendar. Check your internet and try again.",
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _disableSync() async {
+    widget.db.syncToCalendars["outlook"] = "none";
+    widget.db.viewOnlyCalendars["outlook"] = {};
+    widget.db.updateDataBase();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSyncActive =
+        widget.db.syncToCalendars["outlook"] != "none" ||
+        widget.db.viewOnlyCalendars["outlook"]!.isNotEmpty;
+    final outline = Theme.of(context).colorScheme.outline;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(),
-
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSyncActive ? _brandColor.withValues(alpha: 0.5) : outline,
+        ),
+        borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).colorScheme.secondary,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(height: 10),
-          Text(
-            widget.title,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                title: Row(
-                  children: [
-                    Text(
-                      "Sync with outlook calendars",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    ),
-                    Spacer(),
-                    if (isSyncTrue)
-                      IconButton(
-                        onPressed: () async {
-                          // Update toggle states first
-
-                          try {
-                            // Fetch calendars
-
-                            bool hasToken;
-                            hasToken = await OutlookAuthService.initialize();
-                            List<Map<String, dynamic>> calendars = [];
-
-                            print("fetching calendar list......");
-                            //gcal.CalendarList calendars = gcal.CalendarList();
-                            if (hasToken) {
-                              calendars =
-                                  await OutlookCalendarService.getAllCalendars();
-                              print('📅 Found ${calendars.length} calendars');
-
-                              for (final cal in calendars) {
-                                print('• ${cal["name"]}  ID: ${cal["id"]}');
-                              }
-                            }
-
-                            if (calendars.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => OutlookCalendarSyncPage(
-                                        calendars: calendars,
-                                        db: db,
-                                        accountName: "calendarInit[userName]",
-                                      ),
-                                ),
-                              );
-                              // final events = await CalendarService.getEvents(
-                              //   calendars[5].id!,
-                              // );
-                              // List<String?> calNames =
-                              //     calendars.map((c) => c.name).toList();
-                              // print(
-                              //   "Fetched ${events.length} events from here ${calNames}",
-                              // );
-
-                              // WidgetsBinding.instance.addPostFrameCallback((_) async {
-                              //   await CalendarService.importCalendarEventsToDB(
-                              //     events,
-                              //     db,
-                              //   );
-                              //   setState(
-                              //     () {},
-                              //   ); // optional: rebuild if tasks visible in UI
-                              // });
-                              //CalendarService.importCalendarEventsToDB(events, db);
-                              // ScaffoldMessenger.of(context).showSnackBar(
-                              //   SnackBar(
-                              //     content: Text(
-                              //       "Fetched ${events.length} events from ${calendars[5].name}",
-                              //     ),
-                              //     backgroundColor: const Color.fromARGB(
-                              //       255,
-                              //       82,
-                              //       255,
-                              //       105,
-                              //     ),
-                              //   ),
-                              // );
-                              // Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder:
-                              //         (_) => OutlookCalendarSyncPage(
-                              //           calendars: calendars,
-                              //           db: db,
-                              //         ),
-                              //   ),
-                              // );
-                            } else {
-                              print("No calendars found");
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("No calendars found"),
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                              );
-                            }
-                          } catch (e, st) {
-                            print("Error fetching events: $e \n $st");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Error fetching events: $e"),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                          }
-                        },
-                        icon: Icon(Icons.refresh),
-                      )
-                    else
-                      SizedBox.shrink(),
-                  ],
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _brandColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Image.asset(
+                    "assets/images/outlook/icons8-microsoft-outlook-2025-48-2.png",
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
-                value: isSyncTrue,
-                onChanged: (value) async {
-                  // Update toggle states first
-                  setState(() {
-                    isSyncTrue = value;
-                  });
-
-                  if (value) {
-                    try {
-                      // Fetch calendars
-                      bool hasToken;
-                      hasToken = await OutlookAuthService.initialize();
-                      List<Map<String, dynamic>> calendars = [];
-                      if (hasToken) {
-                        calendars =
-                            await OutlookCalendarService.getAllCalendars();
-                        print('📅 Found ${calendars.length ?? 0} calendars');
-
-                        for (final cal in calendars) {
-                          print(
-                            '• ${cal["name"]} - canEdit: ${cal['canEdit']} ID: ${cal["id"]}',
-                          );
-                        }
-                      }
-
-                      if (calendars.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => OutlookCalendarSyncPage(
-                                  calendars: calendars,
-                                  db: db,
-                                  accountName: "calendarInit[userName]",
-                                ),
-                          ),
-                        );
-                      } else {
-                        print("No calendars found");
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("No calendars found"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    } catch (e, st) {
-                      print("Error fetching events: $e \n $st");
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Error fetching events: $e"),
-                          backgroundColor: Colors.redAccent,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Outlook Calendar",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    }
-                  } else {
-                    // Disable sync
-                    db.syncToCalendars["outlook"] = "none";
-                    db.viewOnlyCalendars["outlook"] = {};
-                    db.updateDataBase();
-                    setState(() {
-                      isSyncTrue = false;
-                    });
-                  }
-                },
-                activeColor: Theme.of(context).colorScheme.primary,
-              ),
-            ],
+                      ),
+                      Text(
+                        isSyncActive ? "Connected" : "Not connected",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              isSyncActive
+                                  ? _brandColor
+                                  : onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+          Divider(height: 1, color: outline),
+          // Description
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              "Sync tasks with your Microsoft Outlook calendar.",
+              style: TextStyle(
+                fontSize: 13,
+                color: onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          // Switch
+          SwitchListTile(
+            title: const Text("Enable sync"),
+            value: isSyncActive,
+            onChanged:
+                _isLoading
+                    ? null
+                    : (value) async {
+                      if (value) {
+                        await _fetchAndNavigate();
+                      } else {
+                        await _disableSync();
+                      }
+                    },
+            activeColor: Theme.of(context).colorScheme.primary,
+            secondary:
+                _isLoading
+                    ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
+                    : null,
+          ),
+          // Manage footer (only when active)
+          if (isSyncActive) ...[
+            Divider(height: 1, color: outline),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _fetchAndNavigate,
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text("Manage"),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

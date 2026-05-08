@@ -3,7 +3,7 @@ import 'package:msal_auth/msal_auth.dart';
 
 class OutlookAuthService {
   // F-01: must match msal_config.json client_id
-  static const _clientId = '1046c7a4-3a52-4845-b477-81163b44f47e';
+  static const _clientId = '6450d522-3a1c-4005-ae93-1fdc7f91aea2';
   static const _redirectUri =
       "msauth://com.example.to_do_app/Oust7aZi9rTbGkNnTUHkeg3V6WQ%3D";
 
@@ -108,7 +108,9 @@ class OutlookAuthService {
 
       // F-04: never log the full token
       print('✅ Interactive sign-in succeeded');
-      return result.accessToken;
+      _accessToken = result.accessToken;
+      await storage.write(key: 'outlook_cal_accessToken', value: _accessToken);
+      return _accessToken;
     } catch (e) {
       print("❌sign in error $e");
       return null;

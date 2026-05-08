@@ -7,51 +7,41 @@ import 'package:to_do_app/services/local_calendar_service.dart';
 
 class LocalCalendarTile extends StatefulWidget {
   final ToDoDataBase db;
-  final String title;
 
-  const LocalCalendarTile({super.key, required this.title, required this.db});
+  const LocalCalendarTile({super.key, required this.db});
 
   @override
-  State<LocalCalendarTile> createState() => _CalendarTileState();
+  State<LocalCalendarTile> createState() => _LocalCalendarTileState();
 }
 
-class _CalendarTileState extends State<LocalCalendarTile> {
-  bool isSyncTrue = false;
+class _LocalCalendarTileState extends State<LocalCalendarTile> {
+  bool _isLoading = false;
 
-  late ToDoDataBase db;
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-
-    db = widget.db;
-  }
+  static const _brandColor = Color(0xFF00897B);
 
   Future<void> _showOpenSettingsDialog() async {
     if (!mounted) return;
     await showDialog<void>(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('Calendar Access Blocked'),
-            content: const Text(
-              'Calendar access was denied. Please enable it in Settings to sync your tasks.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Not Now'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  openAppSettings();
-                },
-                child: const Text('Open Settings'),
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: const Text('Calendar Access Blocked'),
+        content: const Text(
+          'Calendar access was denied. Please enable it in Settings to sync your tasks.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Not Now'),
           ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -68,27 +58,25 @@ class _CalendarTileState extends State<LocalCalendarTile> {
       return null;
     }
 
-    // Dialog 1: permission can still be requested
     final bool accepted =
         await showDialog<bool>(
           context: context,
-          builder:
-              (_) => AlertDialog(
-                title: const Text('Calendar Access Required'),
-                content: const Text(
-                  'To sync your tasks with your device calendar, the app needs calendar access.',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: const Text('Not Now'),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    child: const Text('Grant Access'),
-                  ),
-                ],
+          builder: (_) => AlertDialog(
+            title: const Text('Calendar Access Required'),
+            content: const Text(
+              'To sync your tasks with your device calendar, the app needs calendar access.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Not Now'),
               ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Grant Access'),
+              ),
+            ],
+          ),
         ) ??
         false;
 
@@ -96,7 +84,6 @@ class _CalendarTileState extends State<LocalCalendarTile> {
 
     final granted = await LocalCalendarService.requestCalendarPermission();
     if (!granted) {
-      // OS silently blocked (denied once on some devices) — explain and open Settings
       await _showOpenSettingsDialog();
       return null;
     }
@@ -118,230 +105,192 @@ class _CalendarTileState extends State<LocalCalendarTile> {
     return calendars;
   }
 
+  Future<void> _handleEnableSync() async {
+    setState(() => _isLoading = true);
+    try {
+      final calendars = await _requestCalendarWithRationale();
+      if (calendars == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
+      final toDoCal = await LocalCalendarService.createNewCalendar(calendars);
+      widget.db.syncToCalendars["local"] = toDoCal.id!;
+      if (mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LocalCalendarSyncPage(calendars: calendars, db: widget.db),
+          ),
+        );
+        setState(() {});
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't access the device calendar. Please try again.",
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handleManage() async {
+    setState(() => _isLoading = true);
+    try {
+      final calendars = await _requestCalendarWithRationale();
+      if (calendars == null) return;
+      if (mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => LocalCalendarSyncPage(calendars: calendars, db: widget.db),
+          ),
+        );
+        setState(() {});
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't access the device calendar. Please try again.",
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _disableSync() async {
+    widget.db.viewOnlyCalendars["local"] = {};
+    widget.db.syncToCalendars["local"] = "none";
+    widget.db.updateDataBase();
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
-    isSyncTrue =
-        db.syncToCalendars["local"] != "none" ||
-        db.viewOnlyCalendars["local"]!.isNotEmpty;
+    final isSyncActive =
+        widget.db.syncToCalendars["local"] != "none" ||
+        widget.db.viewOnlyCalendars["local"]!.isNotEmpty;
+    final outline = Theme.of(context).colorScheme.outline;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(),
-
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSyncActive ? _brandColor.withValues(alpha: 0.5) : outline,
+        ),
+        borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).colorScheme.secondary,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(height: 10),
-          Text(
-            widget.title,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                title: Row(
-                  children: [
-                    Text(
-                      "Sync with local calendar",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    ),
-                    Spacer(),
-                    if (isSyncTrue)
-                      IconButton(
-                        onPressed: () async {
-                          // Update toggle states first
-
-                          try {
-                            // Fetch calendars
-                            final calendars =
-                                await _requestCalendarWithRationale();
-                            if (calendars == null) return;
-                            if (calendars.isNotEmpty) {
-                              // final events = await CalendarService.getEvents(
-                              //   calendars[5].id!,
-                              // );
-                              // List<String?> calNames =
-                              //     calendars.map((c) => c.name).toList();
-                              // print(
-                              //   "Fetched ${events.length} events from here ${calNames}",
-                              // );
-
-                              // WidgetsBinding.instance.addPostFrameCallback((_) async {
-                              //   await CalendarService.importCalendarEventsToDB(
-                              //     events,
-                              //     db,
-                              //   );
-                              //   setState(
-                              //     () {},
-                              //   ); // optional: rebuild if tasks visible in UI
-                              // });
-                              //CalendarService.importCalendarEventsToDB(events, db);
-                              // ScaffoldMessenger.of(context).showSnackBar(
-                              //   SnackBar(
-                              //     content: Text(
-                              //       "Fetched ${events.length} events from ${calendars[5].name}",
-                              //     ),
-                              //     backgroundColor: const Color.fromARGB(
-                              //       255,
-                              //       82,
-                              //       255,
-                              //       105,
-                              //     ),
-                              //   ),
-                              // );
-                              //isSyncTrue = true;
-                              if (mounted) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) => LocalCalendarSyncPage(
-                                          calendars: calendars,
-                                          db: db,
-                                        ),
-                                  ),
-                                );
-                              }
-                            } else {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      "No calendars found on this device.",
-                                    ),
-                                    backgroundColor: Colors.redAccent,
-                                  ),
-                                );
-                              }
-                            }
-                          } catch (e) {
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("Error fetching events: $e"),
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        icon: Icon(Icons.refresh),
-                      )
-                    else
-                      SizedBox.shrink(),
-                  ],
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _brandColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.calendar_today, color: Colors.white),
                 ),
-                value: isSyncTrue,
-                onChanged: (value) async {
-                  // Update toggle states first
-                  setState(() {
-                    isSyncTrue = value;
-                  });
-
-                  if (value) {
-                    try {
-                      // Fetch calendars
-                      final calendars = await _requestCalendarWithRationale();
-                      if (calendars == null) {
-                        setState(() {
-                          isSyncTrue = false;
-                        });
-                        return;
-                      }
-                      final toDoCal =
-                          await LocalCalendarService.createNewCalendar(
-                            calendars,
-                          );
-                      if (calendars.isNotEmpty) {
-                        // widget.db.viewOnlyCalendars["local"]!.addAll(
-                        //   calendars.map((c) => c.id!),
-                        // );
-                        widget.db.syncToCalendars["local"] = toDoCal.id!;
-                        // final events = await CalendarService.getEvents(
-                        //   calendars[5].id!,
-                        // );
-                        // List<String?> calNames =
-                        //     calendars.map((c) => c.name).toList();
-                        // print(
-                        //   "Fetched ${events.length} events from here ${calNames}",
-                        // );
-
-                        // WidgetsBinding.instance.addPostFrameCallback((_) async {
-                        //   await CalendarService.importCalendarEventsToDB(
-                        //     events,
-                        //     db,
-                        //   );
-                        //   setState(
-                        //     () {},
-                        //   ); // optional: rebuild if tasks visible in UI
-                        // });
-                        //CalendarService.importCalendarEventsToDB(events, db);
-                        // ScaffoldMessenger.of(context).showSnackBar(
-                        //   SnackBar(
-                        //     content: Text(
-                        //       "Fetched ${events.length} events from ${calendars[5].name}",
-                        //     ),
-                        //     backgroundColor: const Color.fromARGB(
-                        //       255,
-                        //       82,
-                        //       255,
-                        //       105,
-                        //     ),
-                        //   ),
-                        // );
-
-                        if (mounted) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => LocalCalendarSyncPage(
-                                    calendars: calendars,
-                                    db: db,
-                                  ),
-                            ),
-                          );
-                        }
-                      } else {
-                        setState(() {
-                          isSyncTrue = false;
-                        });
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                "No calendars found on this device.",
-                              ),
-                              backgroundColor: Colors.redAccent,
-                            ),
-                          );
-                        }
-                      }
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("Error fetching events: $e"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    }
-                  } else {
-                    widget.db.viewOnlyCalendars["local"] = {};
-                    widget.db.syncToCalendars["local"] = "none";
-                  }
-                },
-                activeColor: Theme.of(context).colorScheme.primary,
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Device Calendar",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        isSyncActive ? "Connected" : "Not connected",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isSyncActive
+                              ? _brandColor
+                              : onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+          Divider(height: 1, color: outline),
+          // Description
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              "Sync tasks with your device's built-in calendar app.",
+              style: TextStyle(
+                fontSize: 13,
+                color: onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          // Switch
+          SwitchListTile(
+            title: const Text("Enable sync"),
+            value: isSyncActive,
+            onChanged: _isLoading
+                ? null
+                : (value) async {
+                    if (value) {
+                      await _handleEnableSync();
+                    } else {
+                      await _disableSync();
+                    }
+                  },
+            activeColor: Theme.of(context).colorScheme.primary,
+            secondary: _isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  )
+                : null,
+          ),
+          // Manage footer (only when active)
+          if (isSyncActive) ...[
+            Divider(height: 1, color: outline),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _handleManage,
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text("Manage"),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

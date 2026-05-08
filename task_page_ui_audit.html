@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UI/UX Audit — Task Page</title>
+  <style>
+    :root {
+      --bg: #0d0f18;
+      --surface: #161925;
+      --surface2: #1e2235;
+      --border: #272c42;
+      --accent: #7c6fff;
+      --accent2: #00d4aa;
+      --danger: #ff5c5c;
+      --warn: #ffb347;
+      --low: #4fc3f7;
+      --info: #a89cff;
+      --text: #e8eaf0;
+      --muted: #7b82a0;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 40px 20px 100px;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .header { text-align: center; margin-bottom: 56px; }
+    .badge-top {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), #b48fff);
+      color: #fff;
+      font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 14px; border-radius: 20px; margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 38px; font-weight: 800;
+      background: linear-gradient(135deg, #e8eaf0, #a89cff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 10px;
+    }
+    .header p { color: var(--muted); font-size: 14px; }
+    .meta {
+      display: flex; justify-content: center; gap: 24px;
+      margin-top: 18px; font-size: 13px; color: var(--muted);
+    }
+
+    /* ── Summary strip ── */
+    .summary {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 44px;
+    }
+    .summary-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; text-align: center;
+    }
+    .summary-item .count { font-size: 34px; font-weight: 800; line-height: 1; margin-bottom: 6px; }
+    .summary-item .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+    .c-critical { color: var(--danger); }
+    .c-high { color: var(--warn); }
+    .c-medium { color: var(--info); }
+    .c-low { color: var(--low); }
+
+    /* ── Section ── */
+    .section { margin-bottom: 44px; }
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-number {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #b48fff);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; font-size: 14px; font-weight: 700;
+      color: #fff; flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 20px; font-weight: 700; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius); overflow: hidden; font-size: 14px; }
+    thead tr { background: var(--surface2); }
+    th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+    td { padding: 14px 16px; border-top: 1px solid var(--border); vertical-align: top; line-height: 1.55; }
+    tr:hover td { background: rgba(124, 111, 255, 0.04); }
+
+    /* ── Severity badges ── */
+    .sev {
+      display: inline-block; font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px; white-space: nowrap;
+    }
+    .sev-critical { background: rgba(255,92,92,.15); color: var(--danger); border: 1px solid rgba(255,92,92,.3); }
+    .sev-high { background: rgba(255,179,71,.15); color: var(--warn); border: 1px solid rgba(255,179,71,.3); }
+    .sev-medium { background: rgba(168,156,255,.15); color: var(--info); border: 1px solid rgba(168,156,255,.3); }
+    .sev-low { background: rgba(79,195,247,.15); color: var(--low); border: 1px solid rgba(79,195,247,.3); }
+
+    /* ── Priority list ── */
+    .priority-list { list-style: none; }
+    .priority-list li {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 12px 16px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px;
+      margin-bottom: 8px; font-size: 14px; transition: border-color .2s;
+    }
+    .priority-list li:hover { border-color: var(--accent); }
+    .p-label { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+    .p-critical { background: rgba(255,92,92,.15); color: var(--danger); border: 1px solid rgba(255,92,92,.3); }
+    .p-high { background: rgba(255,179,71,.15); color: var(--warn); border: 1px solid rgba(255,179,71,.3); }
+    .p-medium { background: rgba(168,156,255,.15); color: var(--info); border: 1px solid rgba(168,156,255,.3); }
+    .p-low { background: rgba(79,195,247,.15); color: var(--low); border: 1px solid rgba(79,195,247,.3); }
+
+    /* ── Issue cards ── */
+    .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px;
+      transition: border-color .2s, transform .2s;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card-icon { font-size: 22px; margin-bottom: 10px; }
+    .card h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .card p { font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .card .impact { margin-top: 10px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--accent2); }
+
+    /* ── Code snippets ── */
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 1px 6px; border-radius: 4px; font-size: 12px; color: #a89cff;
+    }
+    pre {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px 16px; font-size: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      color: #c5c8e8; overflow-x: auto; margin-top: 12px; line-height: 1.6;
+    }
+    .pre-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+
+    /* ── Before/After ── */
+    .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+    .ba-box { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .ba-box .ba-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .ba-before .ba-label { color: var(--danger); }
+    .ba-after .ba-label { color: var(--accent2); }
+
+    /* ── Footer ── */
+    .footer { text-align: center; margin-top: 64px; padding-top: 24px; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="badge-top">UI / UX Audit Report</div>
+    <h1>Task Page</h1>
+    <p>task_page.dart &nbsp;·&nbsp; lib/pages &nbsp;·&nbsp; Flutter · Material 3</p>
+    <div class="meta">
+      <span>📅 Generated: May 8, 2026</span>
+      <span>📏 1 307 lines</span>
+      <span>🎯 Main task list screen</span>
+    </div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary">
+    <div class="summary-item"><div class="count c-critical">4</div><div class="label">Critical</div></div>
+    <div class="summary-item"><div class="count c-high">6</div><div class="label">High</div></div>
+    <div class="summary-item"><div class="count c-medium">8</div><div class="label">Medium</div></div>
+    <div class="summary-item"><div class="count c-low">5</div><div class="label">Low</div></div>
+  </div>
+
+  <!-- Section 1: Floating Action Buttons -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">1</div>
+      <h2>Floating Action Buttons</h2>
+    </div>
+    <table>
+      <thead><tr><th>Issue</th><th>Severity</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Double decoration on FAB</td>
+          <td><span class="sev sev-medium">Medium</span></td>
+          <td>Each FAB is wrapped in a <code>Container(color: primary)</code> that also sets a circular <code>BoxDecoration</code>, then the <code>FloatingActionButton</code> itself also sets <code>backgroundColor: primary</code> and a rounded <code>shape</code>. The outer Container is redundant and can cause subtle render clipping.</td>
+        </tr>
+        <tr>
+          <td>FABs stacked in a <code>Column</code></td>
+          <td><span class="sev sev-high">High</span></td>
+          <td>Two FABs are composed inside a <code>Column</code> as the <code>floatingActionButton</code> slot. This is non-standard and loses Material's built-in FAB safe-area, elevation, and positioning behaviour. The standard approach is <code>floatingActionButtonLocation</code> + an <code>ExtendedFloatingActionButton</code> or a <code>SpeedDial</code> package.</td>
+        </tr>
+        <tr>
+          <td>Animation placeholder <code>SizedBox(height: 55)</code></td>
+          <td><span class="sev sev-high">High</span></td>
+          <td>When <code>isDuringAnimation</code> is true the completed-tasks FAB is replaced by an empty <code>SizedBox(height: 55)</code>. This leaves a dead gap in the layout and is controlled by a toggled boolean that never resets reliably. Use <code>AnimatedSwitcher</code> or <code>AnimatedOpacity</code> instead.</td>
+        </tr>
+        <tr>
+          <td>Warning FAB placed inside <code>Stack</code> not FAB slot</td>
+          <td><span class="sev sev-critical">Critical</span></td>
+          <td>The priority warning <code>FloatingActionButton</code> is <code>Positioned(top: 16, right: 16)</code> inside the body <code>Stack</code>. It overlaps the task list content and collides with the real FABs on small screens. It should be shown as a banner, a badge on the main FAB, or a persistent top notification strip.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 2: Sync Progress Indicator -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">2</div>
+      <h2>Sync Progress Indicator</h2>
+    </div>
+    <table>
+      <thead><tr><th>Issue</th><th>Severity</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Half-width progress bar</td>
+          <td><span class="sev sev-high">High</span></td>
+          <td>The <code>LinearProgressIndicator</code> is constrained to <code>MediaQuery.of(context).size.width * 0.5</code>. On wide screens this looks unfinished; on narrow screens it may misalign. The progress strip should span the full width, like a standard app loading bar at the very top of the screen.</td>
+        </tr>
+        <tr>
+          <td>Hardcoded text color <code>Colors.grey[700]</code></td>
+          <td><span class="sev sev-medium">Medium</span></td>
+          <td>The "Syncing X%" label uses a hardcoded grey that is unreadable on dark backgrounds. Use <code>Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7)</code>.</td>
+        </tr>
+        <tr>
+          <td>Sync bar overlaps content</td>
+          <td><span class="sev sev-high">High</span></td>
+          <td>The <code>Positioned(top: 0, left: 0)</code> sync bar floats over the task list without any background. Text behind it becomes illegible during a sync. Wrap it in a full-width semi-transparent pill or use a proper <code>LinearProgressIndicator</code> pinned to the <code>SliverAppBar</code> bottom.</td>
+        </tr>
+        <tr>
+          <td>No dismiss or cancel affordance</td>
+          <td><span class="sev sev-medium">Medium</span></td>
+          <td>During a long sync the user has no way to cancel or dismiss the indicator. At minimum a tap-to-dismiss or a timeout fallback should exist.</td>
+        </tr>
+        <tr>
+          <td>SnackBar after sync has no mounted check</td>
+          <td><span class="sev sev-critical">Critical</span></td>
+          <td>Line 1303: <code>ScaffoldMessenger.of(context).showSnackBar(...)</code> is called directly after <code>await</code> with no <code>if (mounted)</code> guard. If the user navigated away during the sync, this will throw a <code>BuildContext across async gap</code> error.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 3: Task Group Cards -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">3</div>
+      <h2>Task Group Cards</h2>
+    </div>
+    <table>
+      <thead><tr><th>Issue</th><th>Severity</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Hardcoded <code>Card(color: Colors.white)</code></td>
+          <td><span class="sev sev-critical">Critical</span></td>
+          <td>Every group card is forced to white regardless of the active theme. This breaks dark mode completely — all cards become blinding white boxes. Replace with <code>Theme.of(context).colorScheme.surface</code> or remove the explicit color and let Material 3 decide.</td>
+        </tr>
+        <tr>
+          <td>Raw group key shown as header</td>
+          <td><span class="sev sev-high">High</span></td>
+          <td><code>groupKey.toUpperCase()</code> displays strings like <code>"2024-11-08"</code> or <code>"2024-11"</code> as group headers. Users see technical date strings instead of human-readable labels like "November 2024" or "This Week". Format these properly with <code>intl</code> <code>DateFormat</code>.</td>
+        </tr>
+        <tr>
+          <td>Empty-group "No tasks" has no icon</td>
+          <td><span class="sev sev-low">Low</span></td>
+          <td>A plain centred grey text "No tasks" with no illustration or icon feels sparse. A small icon like <code>Icons.task_alt</code> with a subtle caption improves the empty state.</td>
+        </tr>
+        <tr>
+          <td>Redundant "Tasks" sub-label inside each group</td>
+          <td><span class="sev sev-low">Low</span></td>
+          <td>Every expanded group shows a "Tasks" label in the primary colour before the task list. Since the content is obviously tasks, this label adds noise without value. Remove it or replace with a task count badge (e.g., "3 tasks").</td>
+        </tr>
+        <tr>
+          <td>Triple repeated <code>if (groupKey == "today")</code> blocks</td>
+          <td><span class="sev sev-medium">Medium</span></td>
+          <td>Three consecutive identical <code>if (groupKey == "today" && !showCompletedTasks)</code> blocks map over <code>localCalTasks</code>, <code>googleCalTasks</code>, and <code>outlookCalTasks</code> separately. Merge them into a single loop over all three lists. Also the "Calendar Events" header appears even when all three lists are empty, leaving an orphaned heading.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 4: Warning FAB / Priority System -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">4</div>
+      <h2>Warning FAB &amp; Priority Alert System</h2>
+    </div>
+    <table>
+      <thead><tr><th>Issue</th><th>Severity</th><th>Detail</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>Colors.white</code> used as sentinel value</td>
+          <td><span class="sev sev-critical">Critical</span></td>
+          <td><code>warningColor != Colors.white</code> is the condition for showing the warning FAB. If the app's theme background or card color is white, this comparison breaks, and the warning always shows. Use a nullable <code>Color? warningColor</code> and check <code>warningColor != null</code>.</td>
+        </tr>
+        <tr>
+          <td>Priority dialog uses hardcoded light colors</td>
+          <td><span class="sev sev-high">High</span></td>
+          <td>The dialog background is <code>Colors.grey[100]</code>, high-priority cards are <code>Colors.red[50]</code>, medium cards are <code>Colors.orange[50]</code>. All of these are hardcoded light-mode colors that look wrong on dark themes. Use theme-aware colors or <code>ColorScheme.errorContainer</code> / <code>tertiaryContainer</code>.</td>
+        </tr>
+        <tr>
+          <td>Raw date strings in priority dialog subtitle</td>
+          <td><span class="sev sev-medium">Medium</span></td>
+          <td><code>subtitle: Text('Due: ${task[3]} ${task[4]}')</code> shows raw stored strings like <code>"2024-11-08 14:30"</code> rather than a formatted label like "Tomorrow at 2:30 PM". Format with <code>intl</code> before displaying.</td>
+        </tr>
+        <tr>
+          <td>Warning FAB has no tooltip</td>
+          <td><span class="sev sev-low">Low</span></td>
+          <td>The warning FAB has no <code>tooltip:</code> parameter. Long-pressing it gives no feedback about what it does. Add <code>tooltip: 'Urgent tasks'</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 5: Missing UX Patterns -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">5</div>
+      <h2>Missing UX Patterns</h2>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">📭</div>
+        <h4>Global Empty State</h4>
+        <p>When <code>db.toDoList</code> is empty there is no app-level empty state — the tab bar just shows empty group headers. Show an illustration + "Add your first task" call-to-action when the list is completely empty.</p>
+        <div class="impact">Impact: High</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">↕️</div>
+        <h4>Pull-to-Refresh for Calendar Sync</h4>
+        <p>Calendar sync only runs at startup via <code>importViewOnly()</code>. There is no way for the user to manually trigger a refresh. Wrap the <code>ListView</code> in a <code>RefreshIndicator</code> to call <code>importViewOnly()</code> on pull.</p>
+        <div class="impact">Impact: Medium</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">✅</div>
+        <h4>Task Completion Feedback</h4>
+        <p>Completing a task makes it silently disappear from the list. A brief completion animation (slide-out or fade with a check mark) would confirm the action and feel satisfying.</p>
+        <div class="impact">Impact: Medium</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔢</div>
+        <h4>Task Count Badge per Tab</h4>
+        <p>Tabs show only the category name. Adding a badge with the pending task count (e.g., "Work · 4") tells the user what needs attention without switching tabs.</p>
+        <div class="impact">Impact: Medium</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌙</div>
+        <h4>Dark Mode Support</h4>
+        <p>Multiple hardcoded colors (<code>Colors.white</code>, <code>Colors.grey[100]</code>, <code>Colors.red[50]</code>) mean the page is effectively light-mode only. A full theme-color audit is needed across cards, dialogs, and indicators.</p>
+        <div class="impact">Impact: Critical</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">↩️</div>
+        <h4>Undo Task Deletion</h4>
+        <p>Deleting a task is instant and irreversible. A SnackBar with an "Undo" action (holding the deleted task in a local variable for ~5 seconds) is a standard safety net for destructive operations.</p>
+        <div class="impact">Impact: High</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 6: Code-Level UI Bugs -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">6</div>
+      <h2>Code-Level UI Bugs</h2>
+    </div>
+    <table>
+      <thead><tr><th>Location</th><th>Severity</th><th>Bug</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Line 688–689</td>
+          <td><span class="sev sev-high">High</span></td>
+          <td><code>SortTasksService.sortTasksByMode(db.toDoList, sorting) as List&lt;List&lt;dynamic&gt;&gt;;</code> — the result is cast but never assigned. The sort is silently discarded for the "All" tab, so tasks always appear in insertion order regardless of the selected sort mode.</td>
+        </tr>
+        <tr>
+          <td>Line 1015</td>
+          <td><span class="sev sev-critical">Critical</span></td>
+          <td><code>DateTime.tryParse('$dueDateStr $dueTimeStr')!</code> — <code>tryParse</code> can return <code>null</code> for any malformed stored value, but the <code>!</code> force-unwraps it, causing a crash. Remove the <code>!</code> and handle <code>null</code> with a <code>continue</code>.</td>
+        </tr>
+        <tr>
+          <td>Line 1303</td>
+          <td><span class="sev sev-critical">Critical</span></td>
+          <td>No <code>mounted</code> check before <code>ScaffoldMessenger.of(context).showSnackBar()</code> after async calendar sync. If the page has been disposed, this throws a framework error.</td>
+        </tr>
+        <tr>
+          <td>Line 397</td>
+          <td><span class="sev sev-medium">Medium</span></td>
+          <td><code>if (widget.updateMissedTasks) RepeatTask.createPendingRepeatTasks(db, context);</code> — called in <code>initState</code> but uses <code>context</code>, which should not be used synchronously in <code>initState</code>. Wrap in <code>WidgetsBinding.instance.addPostFrameCallback</code>.</td>
+        </tr>
+        <tr>
+          <td>Lines 53–68</td>
+          <td><span class="sev sev-low">Low</span></td>
+          <td>Several variables are declared but never used: <code>categorizedToDOTasks</code>, <code>_addedSubtasks</code>, <code>warningColor</code> (as a field while also being a local-scope side effect), <code>googleRestored</code>, <code>selectedGrouping</code>, <code>selectedSorting</code>, <code>groupType</code>, <code>sortType</code>. Dead fields add confusion and inflate state size.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 7: Before/After snippets -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">7</div>
+      <h2>Key Before / After Fixes</h2>
+    </div>
+
+    <p style="color:var(--muted); font-size:14px; margin-bottom:16px;">The most impactful single-line or two-line fixes.</p>
+
+    <div style="margin-bottom:20px;">
+      <div class="pre-label">Fix 1 — Dark-theme card color</div>
+      <div class="before-after">
+        <div class="ba-box ba-before">
+          <div class="ba-label">Before</div>
+          <pre>Card(
+  color: Colors.white,
+  …
+)</pre>
+        </div>
+        <div class="ba-box ba-after">
+          <div class="ba-label">After</div>
+          <pre>Card(
+  color: Theme.of(context)
+      .colorScheme.surface,
+  …
+)</pre>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div class="pre-label">Fix 2 — Warning color sentinel</div>
+      <div class="before-after">
+        <div class="ba-box ba-before">
+          <div class="ba-label">Before</div>
+          <pre>Color warningColor = Colors.white;
+…
+warningColor != Colors.white
+  ? FloatingActionButton(…)
+  : Container()</pre>
+        </div>
+        <div class="ba-box ba-after">
+          <div class="ba-label">After</div>
+          <pre>Color? warningColor;
+…
+if (warningColor != null)
+  FloatingActionButton(…)</pre>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div class="pre-label">Fix 3 — Force-unwrap crash on date parse</div>
+      <div class="before-after">
+        <div class="ba-box ba-before">
+          <div class="ba-label">Before</div>
+          <pre>DateTime? dueDate =
+  DateTime.tryParse(
+    '$dueDateStr $dueTimeStr')!;</pre>
+        </div>
+        <div class="ba-box ba-after">
+          <div class="ba-label">After</div>
+          <pre>DateTime? dueDate =
+  DateTime.tryParse(
+    '$dueDateStr $dueTimeStr');
+if (dueDate == null) continue;</pre>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <div class="pre-label">Fix 4 — Mounted check before SnackBar</div>
+      <div class="before-after">
+        <div class="ba-box ba-before">
+          <div class="ba-label">Before</div>
+          <pre>syncProvider.finishSync();
+ScaffoldMessenger.of(context)
+  .showSnackBar(SnackBar(
+    content: Text(
+      "Calendar synced")));</pre>
+        </div>
+        <div class="ba-box ba-after">
+          <div class="ba-label">After</div>
+          <pre>syncProvider.finishSync();
+if (!mounted) return;
+ScaffoldMessenger.of(context)
+  .showSnackBar(SnackBar(
+    content: Text(
+      "Calendar synced")));</pre>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="pre-label">Fix 5 — Discarded sort result on "All" tab</div>
+      <div class="before-after">
+        <div class="ba-box ba-before">
+          <div class="ba-label">Before</div>
+          <pre>SortTasksService
+  .sortTasksByMode(
+    db.toDoList, sorting)
+  as List&lt;List&lt;dynamic&gt;&gt;;  // discarded!
+tasksOfThisTab = db.toDoList;</pre>
+        </div>
+        <div class="ba-box ba-after">
+          <div class="ba-label">After</div>
+          <pre>tasksOfThisTab =
+  SortTasksService.sortTasksByMode(
+    db.toDoList, sorting);</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 8: Priority list -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">8</div>
+      <h2>Quick-Win Priority List</h2>
+    </div>
+    <ul class="priority-list">
+      <li><span class="p-label p-critical">Critical</span> Replace <code>Color warningColor = Colors.white</code> sentinel with <code>Color? warningColor</code></li>
+      <li><span class="p-label p-critical">Critical</span> Remove <code>!</code> force-unwrap on <code>DateTime.tryParse()</code> (line 1015) — add null check + continue</li>
+      <li><span class="p-label p-critical">Critical</span> Add <code>if (!mounted) return;</code> before <code>ScaffoldMessenger</code> call after calendar sync (line 1303)</li>
+      <li><span class="p-label p-critical">Critical</span> Move warning FAB out of the body <code>Stack</code> — use a banner or badge instead of an overlapping FAB</li>
+      <li><span class="p-label p-high">High</span> Replace <code>Card(color: Colors.white)</code> with <code>colorScheme.surface</code> across all group cards</li>
+      <li><span class="p-label p-high">High</span> Assign the sort result in <code>_buildTasksForTab</code> for the "All" tab (line 688–689)</li>
+      <li><span class="p-label p-high">High</span> Extend sync progress bar to full width; add a semi-transparent background behind it</li>
+      <li><span class="p-label p-high">High</span> Replace hardcoded <code>Colors.red[50]</code>, <code>Colors.grey[100]</code> in priority dialog with theme-aware colors</li>
+      <li><span class="p-label p-high">High</span> Replace stacked-Column FABs with <code>AnimatedSwitcher</code> + proper FAB slot usage</li>
+      <li><span class="p-label p-high">High</span> Add "Undo" action to task deletion SnackBar</li>
+      <li><span class="p-label p-medium">Medium</span> Format group keys as human-readable dates ("November 2024") using <code>intl</code></li>
+      <li><span class="p-label p-medium">Medium</span> Merge triple <code>if (groupKey == "today")</code> cal-event blocks into one; guard "Calendar Events" header on non-empty lists</li>
+      <li><span class="p-label p-medium">Medium</span> Fix hardcoded <code>Colors.grey[700]</code> sync text to use <code>colorScheme.onSurface.withValues(alpha: 0.7)</code></li>
+      <li><span class="p-label p-medium">Medium</span> Move <code>RepeatTask.createPendingRepeatTasks</code> (line 397) into a <code>addPostFrameCallback</code></li>
+      <li><span class="p-label p-medium">Medium</span> Add <code>RefreshIndicator</code> around the <code>ListView</code> to allow manual calendar re-sync</li>
+      <li><span class="p-label p-medium">Medium</span> Format due dates in priority dialog with <code>intl</code> instead of raw stored strings</li>
+      <li><span class="p-label p-low">Low</span> Add task count badge to each tab (e.g., "Work · 4")</li>
+      <li><span class="p-label p-low">Low</span> Add <code>tooltip: 'Urgent tasks'</code> to warning FAB</li>
+      <li><span class="p-label p-low">Low</span> Add global empty state illustration when <code>db.toDoList</code> is empty</li>
+      <li><span class="p-label p-low">Low</span> Remove unused declared variables: <code>categorizedToDOTasks</code>, <code>_addedSubtasks</code>, <code>googleRestored</code>, <code>selectedGrouping</code>, <code>selectedSorting</code>, <code>groupType</code>, <code>sortType</code></li>
+      <li><span class="p-label p-low">Low</span> Add task completion fade/slide animation instead of silent disappearance</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Generated for <strong>to_do_app</strong> &nbsp;·&nbsp; task_page.dart &nbsp;·&nbsp; Flutter / Material 3 &nbsp;·&nbsp; May 8, 2026
+  </div>
+
+</div>
+</body>
+</html>

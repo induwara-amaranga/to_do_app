@@ -16,6 +16,7 @@ class CalenderSyncPage extends StatefulWidget {
 
 class _CalenderSyncPageState extends State<CalenderSyncPage> {
   late ToDoDataBase db;
+
   @override
   void initState() {
     super.initState();
@@ -27,33 +28,58 @@ class _CalenderSyncPageState extends State<CalenderSyncPage> {
     context.watch<CalendarSyncProvider>();
     return Scaffold(
       appBar: AppBar(
-        title: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 70.0),
-          child: Text(
-            "Calender Sync",
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary),
+        title: Text(
+          'Calendar Sync',
+          style: TextStyle(
+            fontFamily: 'Manrope',
+            fontWeight: FontWeight.w900,
+            fontSize: 20,
+            letterSpacing: -0.4,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        centerTitle: true,
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(15.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 20),
-            Text("Select Calender Sync method", style: TextStyle(fontSize: 24)),
-            SizedBox(height: 20),
-            Text(
-              "This is where calender sync settings will be managed.By enabling you can sync your tasks with calendar events",
-              style: TextStyle(color: Colors.grey.shade700, fontSize: 16),
+            const SizedBox(height: 8),
+            // Heading
+            Row(
+              children: [
+                Icon(
+                  Icons.sync,
+                  size: 26,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  "Select sync method",
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                ),
+              ],
             ),
-            SizedBox(height: 30),
-            LocalCalendarTile(title: "Sync with local calendar app", db: db),
-            SizedBox(height: 20),
-            GoogleCalendarTile(title: "sync with google calendar", db: db),
-            SizedBox(height: 20),
-            OutlookCalendarTile(title: "sync with outtlook calendar", db: db),
+            const SizedBox(height: 10),
+            Text(
+              "Connect your tasks to a calendar so they appear as events. You can enable multiple providers.",
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.6),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 28),
+            LocalCalendarTile(db: db),
+            const SizedBox(height: 16),
+            GoogleCalendarTile(db: db),
+            const SizedBox(height: 16),
+            OutlookCalendarTile(db: db),
+            const SizedBox(height: 20),
           ],
         ),
       ),

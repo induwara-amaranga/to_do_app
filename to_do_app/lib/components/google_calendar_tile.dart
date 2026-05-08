@@ -1,249 +1,234 @@
 import 'package:flutter/material.dart';
 import 'package:googleapis/calendar/v3.dart' as gcal;
+import 'package:provider/provider.dart';
 import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/pages/google_calendar_sync_page.dart';
-import 'package:to_do_app/pages/local_calendar_sync_page.dart';
-import 'package:to_do_app/services/google_calendar_service.dart';
+import 'package:to_do_app/providers/auth_provider.dart';
 import 'package:to_do_app/services/google_sign.dart';
-import 'package:to_do_app/services/local_calendar_service.dart';
 
 class GoogleCalendarTile extends StatefulWidget {
   final ToDoDataBase db;
-  final String title;
 
-  const GoogleCalendarTile({super.key, required this.title, required this.db});
+  const GoogleCalendarTile({super.key, required this.db});
 
   @override
-  State<GoogleCalendarTile> createState() => _CalendarTileState();
+  State<GoogleCalendarTile> createState() => _GoogleCalendarTileState();
 }
 
-class _CalendarTileState extends State<GoogleCalendarTile> {
-  bool isSyncTrue = false;
+class _GoogleCalendarTileState extends State<GoogleCalendarTile> {
+  bool _isLoading = false;
 
-  late ToDoDataBase db;
+  static const _brandColor = Color(0xFF4285F4);
+  static const _connectedColor = Color(0xFF34A853);
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
+  Future<void> _fetchAndNavigate() async {
+    setState(() => _isLoading = true);
+    try {
+      final authProvider = context.read<AuthProvider>();
 
-    db = widget.db;
+      // Ensure signed in — silent restore first, interactive if needed
+      if (!authProvider.isGoogleSignedIn ||
+          GoogleAuthService.currentUser == null) {
+        var user = await GoogleAuthService.signInSilently();
+        user ??= await GoogleAuthService.signIn();
+
+        if (!mounted) return;
+        if (user == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Google sign-in was cancelled."),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+          return;
+        }
+        authProvider.setGoogleSignedIn(
+          true,
+          displayName: user.displayName ?? user.email,
+        );
+      }
+
+      // Refresh the API client with a current token
+      await GoogleAuthService.ensureApisReady();
+      final calendarAPI = GoogleAuthService.calendarApi;
+
+      gcal.CalendarList calendars = gcal.CalendarList();
+      if (calendarAPI != null) {
+        calendars = await calendarAPI.calendarList.list();
+      }
+
+      if (!mounted) return;
+
+      if (calendars.items?.isNotEmpty == true) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => GoogleCalendarSyncPage(
+                  calendars: calendars.items ?? [],
+                  db: widget.db,
+                  accountName:
+                      GoogleAuthService.currentUser?.email ?? "Unknown",
+                  calendarAPI: calendarAPI!,
+                ),
+          ),
+        );
+        if (mounted) setState(() {});
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("No Google calendars found on this account."),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Couldn't connect to Google Calendar. Check your internet and try again.",
+            ),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _disableSync() async {
+    widget.db.syncToCalendars["google"] = "none";
+    widget.db.viewOnlyCalendars["google"] = {};
+    widget.db.updateDataBase();
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    isSyncTrue =
-        db.syncToCalendars["google"] != "none" ||
-        db.viewOnlyCalendars["google"]!.isNotEmpty;
+    final isSyncActive =
+        widget.db.syncToCalendars["google"] != "none" ||
+        widget.db.viewOnlyCalendars["google"]!.isNotEmpty;
+    final connectedEmail = GoogleAuthService.currentUser?.email;
+    final outline = Theme.of(context).colorScheme.outline;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(),
-
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isSyncActive ? _brandColor.withValues(alpha: 0.5) : outline,
+        ),
+        borderRadius: BorderRadius.circular(12),
         color: Theme.of(context).colorScheme.secondary,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(height: 10),
-          Text(
-            widget.title,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SwitchListTile(
-                title: Row(
-                  children: [
-                    Text(
-                      "Sync with google calendars",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    ),
-                    Spacer(),
-                    if (isSyncTrue)
-                      IconButton(
-                        onPressed: () async {
-                          // Update toggle states first
-
-                          try {
-                            // Fetch calendars
-                            // Map<String, dynamic>? calendarInit =
-                            //     await GoogleCalendarService.initializeSignIn();
-                            gcal.CalendarApi? calendarAPI =
-                                GoogleAuthService.calendarApi;
-                            print("fetching calendar list......");
-                            gcal.CalendarList calendars = gcal.CalendarList();
-                            if (calendarAPI != null) {
-                              calendars = await calendarAPI.calendarList.list();
-                              print(
-                                '📅 Found ${calendars.items?.length ?? 0} calendars',
-                              );
-
-                              for (final cal in calendars.items ?? []) {
-                                print('• ${cal.summary}  (ID: ${cal.id})');
-                              }
-                            }
-
-                            if (calendars.items!.isNotEmpty) {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => GoogleCalendarSyncPage(
-                                        calendars: calendars.items ?? [],
-                                        db: db,
-                                        accountName:
-                                            GoogleAuthService
-                                                .currentUser
-                                                ?.email ??
-                                            "Unknown",
-                                        calendarAPI: calendarAPI!,
-                                      ),
-                                ),
-                              );
-                              // final events = await CalendarService.getEvents(
-                              //   calendars[5].id!,
-                              // );
-                              // List<String?> calNames =
-                              //     calendars.map((c) => c.name).toList();
-                              // print(
-                              //   "Fetched ${events.length} events from here ${calNames}",
-                              // );
-
-                              // WidgetsBinding.instance.addPostFrameCallback((_) async {
-                              //   await CalendarService.importCalendarEventsToDB(
-                              //     events,
-                              //     db,
-                              //   );
-                              //   setState(
-                              //     () {},
-                              //   ); // optional: rebuild if tasks visible in UI
-                              // });
-                              //CalendarService.importCalendarEventsToDB(events, db);
-                              // ScaffoldMessenger.of(context).showSnackBar(
-                              //   SnackBar(
-                              //     content: Text(
-                              //       "Fetched ${events.length} events from ${calendars[5].name}",
-                              //     ),
-                              //     backgroundColor: const Color.fromARGB(
-                              //       255,
-                              //       82,
-                              //       255,
-                              //       105,
-                              //     ),
-                              //   ),
-                              // );
-                              // Navigator.push(
-                              //   context,
-                              //   MaterialPageRoute(
-                              //     builder:
-                              //         (_) => GoogleCalendarSyncPage(
-                              //           calendars: calendars,
-                              //           db: db,
-                              //         ),
-                              //   ),
-                              // );
-                            } else {
-                              print("No calendars found");
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text("No calendars found"),
-                                  backgroundColor: Colors.redAccent,
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            print("Error fetching events: $e");
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Error fetching events: $e"),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                          }
-                        },
-                        icon: Icon(Icons.refresh),
-                      )
-                    else
-                      SizedBox.shrink(),
-                  ],
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _brandColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Image.asset(
+                    "assets/images/google/icons8-google-calendar-48-2.png",
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
-                value: isSyncTrue,
-                onChanged: (value) async {
-                  // Update toggle states first
-                  setState(() {
-                    isSyncTrue = value;
-                  });
-
-                  if (value) {
-                    try {
-                      // Fetch calendars
-                      // Map<String, dynamic>? calendarInit =
-                      //     await GoogleCalendarService.initializeSignIn();
-                      gcal.CalendarApi? calendarAPI =
-                          GoogleAuthService.calendarApi;
-                      gcal.CalendarList calendars = gcal.CalendarList();
-                      if (calendarAPI != null) {
-                        calendars = await calendarAPI.calendarList.list();
-                        print(
-                          '📅 Found ${calendars.items?.length ?? 0} calendars',
-                        );
-
-                        for (final cal in calendars.items ?? []) {
-                          print('• ${cal.summary}  (ID: ${cal.id})');
-                        }
-                      }
-
-                      if (calendars.items!.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => GoogleCalendarSyncPage(
-                                  calendarAPI: calendarAPI!,
-                                  calendars: calendars.items ?? [],
-                                  db: db,
-                                  accountName:
-                                      GoogleAuthService.currentUser?.email ??
-                                      "Unknown",
-                                ),
-                          ),
-                        );
-                      } else {
-                        print("No calendars found");
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("No calendars found"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
-                    } catch (e) {
-                      print("Error fetching events: $e");
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("Error fetching events: $e"),
-                          backgroundColor: Colors.redAccent,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Google Calendar",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
-                      );
-                    }
-                  } else {
-                    db.syncToCalendars["google"] = "none";
-                    db.viewOnlyCalendars["google"] = {};
-                    db.updateDataBase();
-                    setState(() {
-                      isSyncTrue = false;
-                    });
-                  }
-                },
-                activeColor: Theme.of(context).colorScheme.primary,
-              ),
-            ],
+                      ),
+                      Text(
+                        isSyncActive && connectedEmail != null
+                            ? "Connected as $connectedEmail"
+                            : "Not connected",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              isSyncActive
+                                  ? _connectedColor
+                                  : onSurface.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
+          Divider(height: 1, color: outline),
+          // Description
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Text(
+              "Push tasks to Google Calendar as events. Changes sync automatically.",
+              style: TextStyle(
+                fontSize: 13,
+                color: onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ),
+          // Switch
+          SwitchListTile(
+            title: const Text("Enable sync"),
+            value: isSyncActive,
+            onChanged:
+                _isLoading
+                    ? null
+                    : (value) async {
+                      if (value) {
+                        await _fetchAndNavigate();
+                      } else {
+                        await _disableSync();
+                      }
+                    },
+            activeColor: Theme.of(context).colorScheme.primary,
+            secondary:
+                _isLoading
+                    ? SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    )
+                    : null,
+          ),
+          // Manage footer (only when active)
+          if (isSyncActive) ...[
+            Divider(height: 1, color: outline),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _fetchAndNavigate,
+                    icon: const Icon(Icons.tune, size: 16),
+                    label: const Text("Manage"),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

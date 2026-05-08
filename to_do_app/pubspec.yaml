@@ -107,8 +107,10 @@ flutter:
     - assets/sounds/success.mp3
     - assets/lottie/Success1.json
     - assets/images/ai.png
-    - assets/images/android_light_rd_SI@2x.png
-    - assets/images/logo_drive_2020q4_color_2x_web_64dp.png
+    - assets/images/google/android_light_rd_SI@2x.png
+    - assets/images/google/logo_drive_2020q4_color_2x_web_64dp.png
+    - assets/images/google/icons8-google-calendar-48-2.png
+    - assets/images/outlook/icons8-microsoft-outlook-2025-48-2.png
     - assets/msal_config.json
     
     #- assets/images/star.png
