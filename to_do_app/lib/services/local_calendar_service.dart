@@ -509,6 +509,7 @@ class LocalCalendarService {
     //final calendar = await ensureToDoListCalendar();
     final tasksToSync = List.from(db.toDoList);
     for (var task in tasksToSync) {
+      if (task[17] == "repeat") continue;
       try {
         await addEvent(calendarID, task);
         count++;
@@ -547,7 +548,8 @@ class LocalCalendarService {
     for (final event in events) {
       if (event.start == null || event.eventId == null) continue;
       final existing = earliestByEventId[event.eventId];
-      if (existing == null || (event.start as DateTime).isBefore(existing.start as DateTime)) {
+      if (existing == null ||
+          (event.start as DateTime).isBefore(existing.start as DateTime)) {
         earliestByEventId[event.eventId] = event;
       }
     }
@@ -560,9 +562,10 @@ class LocalCalendarService {
       final startUtc = DateTimeUtilsHelper.toUtcUsingLocal(event.start!);
       final isoParts = startUtc.toIso8601String().split('T');
       final dueDate = isoParts.first;
-      final dueTime = isoParts.length > 1
-          ? isoParts[1].split('.').first.replaceAll('Z', '')
-          : '00:00:00';
+      final dueTime =
+          isoParts.length > 1
+              ? isoParts[1].split('.').first.replaceAll('Z', '')
+              : '00:00:00';
 
       final taskDetails = {
         'taskName': event.title ?? 'Untitled Event',

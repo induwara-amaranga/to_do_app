@@ -719,6 +719,14 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                'Tasks',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+
                               if (groupTasks.isEmpty)
                                 const Center(
                                   child: Padding(
@@ -820,7 +828,8 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
 
                               // Calendar events section — only for "today" group,
                               // header guarded so it only shows when events exist
-                              if (todayCalEvents.isNotEmpty) ...[
+                              if (todayCalEvents.isNotEmpty &&
+                                  !showCompletedTasks) ...[
                                 const SizedBox(height: 16),
                                 Text(
                                   'Calendar Events',
@@ -831,10 +840,20 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                ...todayCalEvents.map((e) => SyncTile(task: e)),
+                                ...todayCalEvents.map(
+                                  (e) => Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 0,
+                                      vertical: 4,
+                                    ),
+                                    child: SyncTile(task: e),
+                                  ),
+                                ),
                               ] else if (groupKey == 'today' &&
                                   !showCompletedTasks) ...[
                                 const SizedBox(height: 16),
+
+                                ///if(!showCompletedTasks)
                                 Text(
                                   'Calendar Events',
                                   style: TextStyle(
@@ -871,15 +890,20 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   // ── Calendar helpers ──────────────────────────────────────────────────────
 
   bool _isCalEventForToday(List<dynamic> task) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final storedDate = DateTimeUtilsHelper.parseDate(task[3] as String?);
+    final now = DateTime.now().toUtc();
+    final today = DateTime.utc(now.year, now.month, now.day);
+    DateTime? storedDate = DateTimeUtilsHelper.combineDateAndTime(
+      DateTimeUtilsHelper.parseDate(task[3] as String?),
+      DateTimeUtilsHelper.parseTime(task[4] as String),
+    );
+    storedDate = DateTimeUtilsHelper.utcDateTimeFromUTCvalues(storedDate);
     if (storedDate == null) return false;
-    final storedDay = DateTime(
+    final storedDay = DateTime.utc(
       storedDate.year,
       storedDate.month,
       storedDate.day,
     );
+
     if (storedDay.isAfter(today)) return false;
     switch ((task[7] as String?)?.toLowerCase() ?? 'none') {
       case 'daily':

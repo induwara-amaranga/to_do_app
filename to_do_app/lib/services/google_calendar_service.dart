@@ -599,6 +599,7 @@ class GoogleCalendarService {
     //final calendar = await ensureToDoListCalendar();
     final tasksToSync = List.from(db.toDoList);
     for (var task in tasksToSync) {
+      if (task[17] == "repeat") continue;
       try {
         await addOrUpdateEvent(calendarID, task);
         count++;

@@ -120,4 +120,17 @@ class DateTimeUtilsHelper {
       dateTime.second,
     );
   }
+
+  static DateTime utcDatetimeFromStrings(String dateStr, String timeStr) {
+    DateTime date = parseDate(dateStr) ?? DateTime.now();
+    DateTime time = parseTime(timeStr) ?? DateTime(1970, 1, 1, 23, 59);
+    return DateTime.utc(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+      time.second,
+    );
+  }
 }
