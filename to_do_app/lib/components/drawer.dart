@@ -1,6 +1,7 @@
 import "package:flutter/material.dart";
 import "package:to_do_app/data/database.dart";
 import "package:to_do_app/pages/import_ics_page.dart";
+import "package:to_do_app/pages/settings_page.dart";
 import "package:to_do_app/pages/sign_in_page.dart";
 import "package:to_do_app/services/google_sign.dart";
 
@@ -90,6 +91,21 @@ class _MyDrawerState extends State<MyDrawer> {
                   leading: Icon(Icons.palette),
                   title: Text("Themes"),
                   onTap: () => Navigator.pop(context),
+                ),
+                ListTile(
+                  leading: Icon(Icons.settings),
+                  title: Text("Settings"),
+                  onTap: () async {
+                    Navigator.pop(context); // close drawer first
+
+                    // Push Import Page and wait for result
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SettingsPage(db: widget.db),
+                      ),
+                    );
+                  },
                 ),
                 ListTile(
                   leading: Icon(Icons.calendar_month),

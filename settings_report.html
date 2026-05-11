@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings Page Design Report — To-Do App</title>
+  <style>
+    :root {
+      --primary: #FFB31A;
+      --primary-dark: #e09e00;
+      --surface: #1e1e2e;
+      --surface2: #2a2a3e;
+      --surface3: #313148;
+      --text: #e8e8f0;
+      --text-muted: #9090b0;
+      --accent-blue: #4285F4;
+      --accent-green: #00897B;
+      --accent-purple: #9c27b0;
+      --accent-red: #ef5350;
+      --border: rgba(255,255,255,0.08);
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--surface);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-bottom: 2px solid var(--primary);
+      padding: 48px 40px 36px;
+    }
+    header .badge {
+      display: inline-block;
+      background: var(--primary);
+      color: #1a1a2e;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 600px;
+    }
+    header .meta {
+      margin-top: 20px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    header .meta span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    header .meta strong { color: var(--primary); }
+
+    /* ── Layout ── */
+    .container { max-width: 1100px; margin: 0 auto; padding: 48px 40px; }
+
+    /* ── Section titles ── */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    h2 { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    p  { color: var(--text-muted); font-size: 14px; margin-bottom: 12px; }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    @media(max-width: 720px) { .card-row { grid-template-columns: 1fr; } }
+
+    /* ── Architecture overview ── */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .arch-item {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .arch-item::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .arch-item.appearance::before  { background: var(--primary); }
+    .arch-item.notif::before       { background: #ff7043; }
+    .arch-item.calendar::before    { background: var(--accent-blue); }
+    .arch-item.tasks::before       { background: var(--accent-green); }
+    .arch-item.data::before        { background: var(--accent-purple); }
+    .arch-item.account::before     { background: #ec407a; }
+    .arch-item.about::before       { background: var(--text-muted); }
+
+    .arch-item .icon {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+    .arch-item h4 { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .arch-item p  { font-size: 12px; color: var(--text-muted); margin: 0; }
+
+    /* ── Settings rows mock ── */
+    .mock-page {
+      background: #12121f;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .mock-appbar {
+      background: var(--surface2);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mock-appbar .back { color: var(--text-muted); font-size: 18px; }
+    .mock-appbar h3 { margin: 0; font-size: 16px; font-weight: 600; }
+
+    .mock-section-header {
+      padding: 16px 16px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--primary);
+    }
+    .mock-tile {
+      display: flex;
+      align-items: center;
+      padding: 13px 16px;
+      gap: 14px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .mock-tile:last-child { border-bottom: none; }
+    .mock-tile .tile-icon {
+      width: 36px; height: 36px;
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .mock-tile .tile-text { flex: 1; }
+    .mock-tile .tile-text .title { font-size: 14px; font-weight: 500; color: var(--text); }
+    .mock-tile .tile-text .sub   { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+    .mock-tile .tile-right { font-size: 12px; color: var(--text-muted); }
+    .mock-tile .toggle {
+      width: 36px; height: 20px; border-radius: 10px;
+      background: var(--primary);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .mock-tile .toggle::after {
+      content: ''; position: absolute;
+      width: 16px; height: 16px;
+      background: white; border-radius: 50%;
+      top: 2px; right: 2px;
+    }
+    .mock-tile .toggle.off {
+      background: var(--surface3);
+    }
+    .mock-tile .toggle.off::after { right: auto; left: 2px; }
+
+    .bg-orange  { background: rgba(255,179,26,0.15); }
+    .bg-red     { background: rgba(255,112,67,0.15); }
+    .bg-blue    { background: rgba(66,133,244,0.15); }
+    .bg-green   { background: rgba(0,137,123,0.15); }
+    .bg-purple  { background: rgba(156,39,176,0.15); }
+    .bg-pink    { background: rgba(236,64,122,0.15); }
+    .bg-gray    { background: rgba(144,144,176,0.15); }
+
+    /* ── Chip tags ── */
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .tag.new    { background: rgba(0,137,123,0.2); color: #4db6ac; border: 1px solid rgba(0,137,123,0.3); }
+    .tag.stub   { background: rgba(255,179,26,0.15); color: var(--primary); border: 1px solid rgba(255,179,26,0.3); }
+    .tag.done   { background: rgba(66,133,244,0.15); color: #90caf9; border: 1px solid rgba(66,133,244,0.3); }
+    .tag.low    { background: rgba(156,39,176,0.15); color: #ce93d8; border: 1px solid rgba(156,39,176,0.3); }
+
+    /* ── Settings item list ── */
+    .settings-list { list-style: none; }
+    .settings-list li {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .settings-list li:last-child { border-bottom: none; }
+    .settings-list li .name { color: var(--text); font-weight: 500; min-width: 200px; }
+    .settings-list li .ctrl { color: var(--primary); font-size: 12px; margin-left: auto; white-space: nowrap; }
+
+    /* ── UI suggestion cards ── */
+    .ui-suggestion {
+      background: var(--surface3);
+      border-left: 3px solid var(--primary);
+      border-radius: 0 var(--radius) var(--radius) 0;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+    }
+    .ui-suggestion h4 { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+    .ui-suggestion p  { margin: 0; font-size: 13px; }
+
+    /* ── Code snippet ── */
+    pre {
+      background: #0d0d1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      font-size: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      overflow-x: auto;
+      color: #c9d1d9;
+      margin-bottom: 16px;
+    }
+    .kw  { color: #ff79c6; }
+    .str { color: #f1fa8c; }
+    .cm  { color: #6272a4; }
+    .cls { color: #8be9fd; }
+    .fn  { color: #50fa7b; }
+    .nm  { color: #bd93f9; }
+
+    /* ── Navigation tree ── */
+    .nav-tree {
+      font-family: 'Cascadia Code', monospace;
+      font-size: 13px;
+      line-height: 2;
+      background: #0d0d1a;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .nav-tree .route { color: #8be9fd; }
+    .nav-tree .arrow { color: var(--text-muted); }
+    .nav-tree .page  { color: #50fa7b; }
+    .nav-tree .sub   { color: #f1fa8c; margin-left: 32px; display: block; }
+    .nav-tree .sub::before { content: '└─ '; color: var(--text-muted); }
+
+    /* ── Drawer mock ── */
+    .drawer-mock {
+      background: #12121f;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      max-width: 280px;
+    }
+    .drawer-header {
+      background: var(--primary);
+      padding: 24px 16px 16px;
+    }
+    .drawer-avatar {
+      width: 52px; height: 52px;
+      background: rgba(255,255,255,0.25);
+      border-radius: 50%;
+      margin-bottom: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .drawer-name { font-weight: 700; color: #1a1a2e; font-size: 15px; }
+    .drawer-email { font-size: 11px; color: rgba(26,26,46,0.7); margin-top: 2px; }
+    .drawer-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px;
+      font-size: 14px;
+      color: var(--text);
+      border-bottom: 1px solid var(--border);
+    }
+    .drawer-item .di { color: var(--text-muted); font-size: 16px; }
+    .drawer-item.active { background: rgba(255,179,26,0.08); }
+    .drawer-item.active span { color: var(--primary); font-weight: 600; }
+    .drawer-item.active .di { color: var(--primary); }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+    footer strong { color: var(--primary); }
+
+    /* ── Spacer ── */
+    .spacer { height: 40px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
+<header>
+  <div class="badge">Design Report</div>
+  <h1>Settings Pages — To-Do App</h1>
+  <p>Architecture proposal, page breakdown, individual setting items, and UI suggestions for a polished settings experience.</p>
+  <div class="meta">
+    <span>App: <strong>Flutter To-Do</strong></span>
+    <span>Platform: <strong>Android (Flutter)</strong></span>
+    <span>Theme: <strong>Material 3 · Orange accent</strong></span>
+    <span>Date: <strong>May 2026</strong></span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════ BODY ═══════════════════════════════ -->
+<div class="container">
+
+  <!-- ── 1. Overview ── -->
+  <div class="section-title">01 — Overview</div>
+  <h2>Settings Architecture</h2>
+  <p>
+    The drawer already has stubs for Themes, Date &amp; Time, Notifications, and Reminders.
+    Rather than one giant settings page, split into <strong>focused sub-pages</strong> — each opened from a top-level
+    Settings hub. This keeps each screen short and scannable.
+  </p>
+
+  <div class="arch-grid">
+    <div class="arch-item appearance">
+      <div class="icon">🎨</div>
+      <h4>Appearance</h4>
+      <p>Theme, colors, font size, tile density</p>
+    </div>
+    <div class="arch-item notif">
+      <div class="icon">🔔</div>
+      <h4>Notifications &amp; Reminders</h4>
+      <p>Push alerts, default reminder, quiet hours</p>
+    </div>
+    <div class="arch-item calendar">
+      <div class="icon">📅</div>
+      <h4>Calendar &amp; Sync</h4>
+      <p>Sync frequency, direction, conflict policy</p>
+    </div>
+    <div class="arch-item tasks">
+      <div class="icon">✅</div>
+      <h4>Task Defaults</h4>
+      <p>Default priority, category, reminder</p>
+    </div>
+    <div class="arch-item data">
+      <div class="icon">💾</div>
+      <h4>Data &amp; Privacy</h4>
+      <p>Backup, export, clear data, permissions</p>
+    </div>
+    <div class="arch-item account">
+      <div class="icon">👤</div>
+      <h4>Account</h4>
+      <p>Google &amp; Outlook connections</p>
+    </div>
+    <div class="arch-item about">
+      <div class="icon">ℹ️</div>
+      <h4>About</h4>
+      <p>Version, rate, share, support</p>
+    </div>
+  </div>
+
+  <!-- ── Navigation tree ── -->
+  <div class="card">
+    <h3 style="margin-bottom:14px;">Suggested Navigation Tree</h3>
+    <div class="nav-tree">
+      <span><span class="route">Drawer</span> <span class="arrow">→</span> <span class="page">SettingsPage</span> <span class="arrow">(hub)</span></span>
+      <span class="sub"><span class="route">/settings/appearance</span> <span class="arrow">→</span> <span class="page">AppearancePage</span></span>
+      <span class="sub"><span class="route">/settings/notifications</span> <span class="arrow">→</span> <span class="page">NotificationsPage</span></span>
+      <span class="sub"><span class="route">/settings/calendar</span> <span class="arrow">→</span> <span class="page">CalendarSettingsPage</span></span>
+      <span class="sub"><span class="route">/settings/task-defaults</span> <span class="arrow">→</span> <span class="page">TaskDefaultsPage</span></span>
+      <span class="sub"><span class="route">/settings/data</span> <span class="arrow">→</span> <span class="page">DataPrivacyPage</span></span>
+      <span class="sub"><span class="route">/settings/account</span> <span class="arrow">→</span> <span class="page">AccountPage</span></span>
+      <span class="sub"><span class="route">/settings/about</span> <span class="arrow">→</span> <span class="page">AboutPage</span></span>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ── 2. Page Breakdowns ── -->
+  <div class="section-title">02 — Page Breakdowns</div>
+
+  <!-- 2a Appearance -->
+  <div class="card-row">
+    <div>
+      <h2 style="margin-bottom:4px;">🎨 Appearance</h2>
+      <div class="tags" style="margin-bottom:16px;">
+        <span class="tag stub">partial stub in drawer</span>
+        <span class="tag new">expand</span>
+      </div>
+      <div class="mock-page">
+        <div class="mock-appbar">
+          <span class="back">←</span>
+          <h3>Appearance</h3>
+        </div>
+        <div class="mock-section-header">Theme</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-orange">🌙</div>
+          <div class="tile-text">
+            <div class="title">Dark Mode</div>
+            <div class="sub">Currently on</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-orange">🎨</div>
+          <div class="tile-text">
+            <div class="title">Accent Color</div>
+            <div class="sub">Orange (default)</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Layout</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-gray">🔡</div>
+          <div class="tile-text">
+            <div class="title">Font Size</div>
+            <div class="sub">Medium</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-gray">📋</div>
+          <div class="tile-text">
+            <div class="title">Task Tile Density</div>
+            <div class="sub">Comfortable</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-gray">🏷️</div>
+          <div class="tile-text">
+            <div class="title">Show Priority Labels</div>
+            <div class="sub">Show colored chips on tiles</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2b Notifications -->
+    <div>
+      <h2 style="margin-bottom:4px;">🔔 Notifications &amp; Reminders</h2>
+      <div class="tags" style="margin-bottom:16px;">
+        <span class="tag stub">stub in drawer</span>
+        <span class="tag new">implement</span>
+      </div>
+      <div class="mock-page">
+        <div class="mock-appbar">
+          <span class="back">←</span>
+          <h3>Notifications</h3>
+        </div>
+        <div class="mock-section-header">Alerts</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-red">🔔</div>
+          <div class="tile-text">
+            <div class="title">Enable Notifications</div>
+            <div class="sub">Master toggle</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-red">🔕</div>
+          <div class="tile-text">
+            <div class="title">Quiet Hours</div>
+            <div class="sub">10:00 PM – 8:00 AM</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Default Reminder</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-orange">⏰</div>
+          <div class="tile-text">
+            <div class="title">Remind me</div>
+            <div class="sub">30 minutes before</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-orange">🔁</div>
+          <div class="tile-text">
+            <div class="title">Repeat Reminder</div>
+            <div class="sub">Once</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-red">📳</div>
+          <div class="tile-text">
+            <div class="title">Vibration</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2c Calendar -->
+  <div class="card-row">
+    <div>
+      <h2 style="margin-bottom:4px;">📅 Calendar &amp; Sync</h2>
+      <div class="tags" style="margin-bottom:16px;">
+        <span class="tag done">sync pages exist</span>
+        <span class="tag new">add config</span>
+      </div>
+      <div class="mock-page">
+        <div class="mock-appbar">
+          <span class="back">←</span>
+          <h3>Calendar &amp; Sync</h3>
+        </div>
+        <div class="mock-section-header">Sync Frequency</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-blue">🔄</div>
+          <div class="tile-text">
+            <div class="title">Auto-Sync</div>
+            <div class="sub">Every hour</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-blue">📆</div>
+          <div class="tile-text">
+            <div class="title">Sync Range</div>
+            <div class="sub">Past 7 days → Next 30 days</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Conflict Policy</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-blue">⚖️</div>
+          <div class="tile-text">
+            <div class="title">On Conflict</div>
+            <div class="sub">Keep local (app wins)</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Sources</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-blue">G</div>
+          <div class="tile-text">
+            <div class="title">Google Calendar</div>
+            <div class="sub">Synced · 2 min ago</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-blue">O</div>
+          <div class="tile-text">
+            <div class="title">Outlook Calendar</div>
+            <div class="sub">Not connected</div>
+          </div>
+          <div class="toggle off"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2d Task Defaults -->
+    <div>
+      <h2 style="margin-bottom:4px;">✅ Task Defaults</h2>
+      <div class="tags" style="margin-bottom:16px;">
+        <span class="tag new">new page</span>
+        <span class="tag low">low effort</span>
+      </div>
+      <div class="mock-page">
+        <div class="mock-appbar">
+          <span class="back">←</span>
+          <h3>Task Defaults</h3>
+        </div>
+        <div class="mock-section-header">New Task</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-orange">🚦</div>
+          <div class="tile-text">
+            <div class="title">Default Priority</div>
+            <div class="sub">Medium</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-orange">🏷️</div>
+          <div class="tile-text">
+            <div class="title">Default Category</div>
+            <div class="sub">None</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-orange">⏰</div>
+          <div class="tile-text">
+            <div class="title">Default Reminder</div>
+            <div class="sub">30 min before</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Behaviour</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-green">✅</div>
+          <div class="tile-text">
+            <div class="title">Mark complete on swipe</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-green">🗑️</div>
+          <div class="tile-text">
+            <div class="title">Auto-delete completed</div>
+            <div class="sub">After 30 days</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-green">⭐</div>
+          <div class="tile-text">
+            <div class="title">Pin starred tasks</div>
+            <div class="sub">Always show at top</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2e Data & Privacy + Account -->
+  <div class="card-row">
+    <div>
+      <h2 style="margin-bottom:4px;">💾 Data &amp; Privacy</h2>
+      <div class="tags" style="margin-bottom:16px;">
+        <span class="tag new">new page</span>
+      </div>
+      <div class="mock-page">
+        <div class="mock-appbar">
+          <span class="back">←</span>
+          <h3>Data &amp; Privacy</h3>
+        </div>
+        <div class="mock-section-header">Backup</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-purple">☁️</div>
+          <div class="tile-text">
+            <div class="title">Google Drive Backup</div>
+            <div class="sub">Last backup: 2 days ago</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-purple">💾</div>
+          <div class="tile-text">
+            <div class="title">Auto Backup</div>
+            <div class="sub">Weekly</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Export</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-gray">📤</div>
+          <div class="tile-text">
+            <div class="title">Export as JSON</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-gray">📤</div>
+          <div class="tile-text">
+            <div class="title">Export as CSV</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Danger Zone</div>
+        <div class="mock-tile">
+          <div class="tile-icon" style="background:rgba(239,83,80,0.15);">🗑️</div>
+          <div class="tile-text">
+            <div class="title" style="color:#ef5350;">Clear All Tasks</div>
+          </div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon" style="background:rgba(239,83,80,0.15);">💣</div>
+          <div class="tile-text">
+            <div class="title" style="color:#ef5350;">Reset App Data</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div>
+      <h2 style="margin-bottom:4px;">👤 Account</h2>
+      <div class="tags" style="margin-bottom:16px;">
+        <span class="tag done">sign_in_page exists</span>
+        <span class="tag new">consolidate</span>
+      </div>
+      <div class="mock-page">
+        <div class="mock-appbar">
+          <span class="back">←</span>
+          <h3>Account</h3>
+        </div>
+        <div class="mock-section-header">Google</div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-blue">G</div>
+          <div class="tile-text">
+            <div class="title">user@gmail.com</div>
+            <div class="sub">Connected</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-tile">
+          <div class="tile-icon bg-purple">☁️</div>
+          <div class="tile-text">
+            <div class="title">Google Drive</div>
+            <div class="sub">Backup enabled</div>
+          </div>
+          <div class="toggle"></div>
+        </div>
+        <div class="mock-section-header">Outlook</div>
+        <div class="mock-tile">
+          <div class="tile-icon" style="background:rgba(0,120,212,0.15);">O</div>
+          <div class="tile-text">
+            <div class="title">Connect Outlook</div>
+            <div class="sub">Not signed in</div>
+          </div>
+          <div class="tile-right">›</div>
+        </div>
+        <div class="mock-section-header">Session</div>
+        <div class="mock-tile">
+          <div class="tile-icon" style="background:rgba(239,83,80,0.15);">🚪</div>
+          <div class="tile-text">
+            <div class="title" style="color:#ef5350;">Sign out of Google</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ── 3. Drawer Suggestion ── -->
+  <div class="section-title">03 — Drawer Refactor</div>
+  <h2>Consolidate drawer into a Settings hub entry</h2>
+  <p>
+    Instead of individual drawer items for Themes / Notifications / Reminders (each going nowhere),
+    replace them with a single <strong>Settings</strong> entry that routes to the hub page.
+    Keep Import at the top level since it's a quick-access action, not a setting.
+  </p>
+
+  <div class="card-row">
+    <div>
+      <h3 style="margin-bottom:12px; color: var(--text-muted);">Current drawer (stubs)</h3>
+      <div class="drawer-mock">
+        <div class="drawer-header">
+          <div class="drawer-avatar">👤</div>
+          <div class="drawer-name">User Name</div>
+          <div class="drawer-email">user@gmail.com</div>
+        </div>
+        <div class="drawer-item"><span class="di">🎨</span><span>Themes</span></div>
+        <div class="drawer-item"><span class="di">📅</span><span>Date &amp; Time Settings</span></div>
+        <div class="drawer-item"><span class="di">🔔</span><span>Notifications</span></div>
+        <div class="drawer-item"><span class="di">🔔</span><span>Reminders</span></div>
+        <div class="drawer-item"><span class="di">📥</span><span>Import</span></div>
+        <div class="drawer-item" style="border-top: 1px solid rgba(255,255,255,0.1)"><span class="di">⭐</span><span>Rate the app</span></div>
+        <div class="drawer-item"><span class="di">↗️</span><span>Share with friends</span></div>
+        <div class="drawer-item"><span class="di">✉️</span><span>Contact support</span></div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:12px; color: #4db6ac;">Suggested drawer (clean)</h3>
+      <div class="drawer-mock">
+        <div class="drawer-header">
+          <div class="drawer-avatar">👤</div>
+          <div class="drawer-name">User Name</div>
+          <div class="drawer-email">user@gmail.com</div>
+        </div>
+        <div class="drawer-item"><span class="di">📥</span><span>Import (.ics)</span></div>
+        <div class="drawer-item active"><span class="di">⚙️</span><span>Settings</span></div>
+        <div class="drawer-item" style="border-top: 1px solid rgba(255,255,255,0.1)"><span class="di">⭐</span><span>Rate the app</span></div>
+        <div class="drawer-item"><span class="di">↗️</span><span>Share with friends</span></div>
+        <div class="drawer-item"><span class="di">✉️</span><span>Contact support</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ── 4. Hive storage ── -->
+  <div class="section-title">04 — Storage</div>
+  <h2>Persisting Settings via Hive</h2>
+  <p>
+    The app already uses Hive. Add a <code>settings</code> Hive box (it likely already exists in <code>database.dart</code>) and store all settings as key-value pairs.
+  </p>
+
+  <pre><span class="cm">// In ToDoDataBase or a dedicated SettingsRepository</span>
+<span class="kw">class</span> <span class="cls">SettingsRepository</span> {
+  <span class="kw">static</span> <span class="kw">final</span> _box = Hive.box(<span class="str">'settings'</span>);
+
+  <span class="cm">// Appearance</span>
+  <span class="kw">static</span> <span class="kw">bool</span> <span class="kw">get</span> isDarkMode    =&gt; _box.<span class="fn">get</span>(<span class="str">'darkMode'</span>, defaultValue: <span class="kw">true</span>);
+  <span class="kw">static</span> <span class="kw">void</span> <span class="fn">setDarkMode</span>(<span class="kw">bool</span> v) =&gt; _box.<span class="fn">put</span>(<span class="str">'darkMode'</span>, v);
+
+  <span class="cm">// Notifications</span>
+  <span class="kw">static</span> <span class="kw">bool</span>  <span class="kw">get</span> notificationsEnabled =&gt; _box.<span class="fn">get</span>(<span class="str">'notifsEnabled'</span>, defaultValue: <span class="kw">true</span>);
+  <span class="kw">static</span> <span class="kw">int</span>   <span class="kw">get</span> defaultReminderMins  =&gt; _box.<span class="fn">get</span>(<span class="str">'reminderMins'</span>,  defaultValue: <span class="nm">30</span>);
+  <span class="kw">static</span> <span class="kw">int</span>   <span class="kw">get</span> quietHourStart       =&gt; _box.<span class="fn">get</span>(<span class="str">'quietStart'</span>,     defaultValue: <span class="nm">22</span>);
+  <span class="kw">static</span> <span class="kw">int</span>   <span class="kw">get</span> quietHourEnd         =&gt; _box.<span class="fn">get</span>(<span class="str">'quietEnd'</span>,       defaultValue: <span class="nm">8</span>);
+
+  <span class="cm">// Task Defaults</span>
+  <span class="kw">static</span> <span class="kw">String</span> <span class="kw">get</span> defaultPriority =&gt; _box.<span class="fn">get</span>(<span class="str">'defaultPriority'</span>, defaultValue: <span class="str">'medium'</span>);
+  <span class="kw">static</span> <span class="kw">String</span> <span class="kw">get</span> defaultCategory =&gt; _box.<span class="fn">get</span>(<span class="str">'defaultCategory'</span>, defaultValue: <span class="str">''</span>);
+}</pre>
+
+  <div class="spacer"></div>
+
+  <!-- ── 5. UI Suggestions ── -->
+  <div class="section-title">05 — UI Suggestions</div>
+  <h2>Polishing the Settings Experience</h2>
+  <p>Specific, implementable UI improvements for the settings pages and the overall app.</p>
+
+  <div class="ui-suggestion">
+    <h4>① Grouped tiles with colored icon backgrounds</h4>
+    <p>
+      Each setting tile should have a small rounded square icon with a tinted background (like iOS Settings).
+      You're already doing this in <code>SyncTile</code> — carry the same pattern into settings tiles.
+      Use <code>Container(decoration: BoxDecoration(color: accent.withValues(alpha:0.15), borderRadius: BorderRadius.circular(8)))</code>.
+    </p>
+  </div>
+
+  <div class="ui-suggestion">
+    <h4>② Section headers with subtle top spacing</h4>
+    <p>
+      Add a <code>Padding(padding: EdgeInsets.fromLTRB(16, 20, 16, 6))</code> section label in
+      <code>ThemeData.colorScheme.primary</code> color with font size 11 and letter spacing 1.5.
+      This breaks long settings pages into scannable groups without a heavy visual divider.
+    </p>
+  </div>
+
+  <div class="ui-suggestion">
+    <h4>③ Settings hub page — use a Card-per-section layout</h4>
+    <p>
+      On the top-level Settings page, render each category as a <code>Card</code> with a title,
+      subtitle (e.g. "Dark mode · Orange"), and a trailing chevron. This lets users preview their
+      current settings without opening a page.
+    </p>
+  </div>
+
+  <div class="ui-suggestion">
+    <h4>④ Inline toggles — no separate page for simple booleans</h4>
+    <p>
+      Simple on/off settings (dark mode, vibration, pin starred) should use a <code>Switch</code>
+      directly in the list tile. Only open a sub-page when there are 3+ related options or a complex
+      picker (e.g. quiet hours needs a time range picker).
+    </p>
+  </div>
+
+  <div class="ui-suggestion">
+    <h4>⑤ Danger Zone with visual separation</h4>
+    <p>
+      Put destructive actions (Clear All Tasks, Reset App Data) in a visually separate section with a
+      red-tinted tile background and a confirmation <code>AlertDialog</code> before executing.
+      Never allow these to run on a single tap.
+    </p>
+  </div>
+
+  <div class="ui-suggestion">
+    <h4>⑥ Drawer header — show account status</h4>
+    <p>
+      Display the signed-in email below the display name in the drawer header. If not signed in, show
+      "Tap to sign in" as a subtitle. This removes ambiguity about which account is connected.
+    </p>
+  </div>
+
+  <div class="ui-suggestion">
+    <h4>⑦ Settings search (optional, future)</h4>
+    <p>
+      If the settings grow past 30 items, add a search bar at the top of the hub page. A simple
+      keyword match across setting titles is enough — no fuzzy search needed. Show matched items in a
+      flat list with their section label shown as a subtitle.
+    </p>
+  </div>
+
+  <div class="ui-suggestion">
+    <h4>⑧ Calendar sync status chips on the hub</h4>
+    <p>
+      On the Calendar &amp; Sync settings tile in the hub, show a small row of colored dots (Google=blue,
+      Outlook=blue, Local=teal) to indicate which sources are connected at a glance, without opening the page.
+    </p>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ── 6. Priority ── -->
+  <div class="section-title">06 — Implementation Priority</div>
+  <div class="card">
+    <table style="width:100%; border-collapse:collapse; font-size:14px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <th style="text-align:left; padding:10px 12px; color: var(--text-muted); font-weight:600;">Page</th>
+          <th style="text-align:left; padding:10px 12px; color: var(--text-muted); font-weight:600;">Effort</th>
+          <th style="text-align:left; padding:10px 12px; color: var(--text-muted); font-weight:600;">State to Persist</th>
+          <th style="text-align:left; padding:10px 12px; color: var(--text-muted); font-weight:600;">Priority</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding:10px 12px; color:#fff; font-weight:500;">Appearance</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Low</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">ThemeProvider (exists), accent, density</td>
+          <td style="padding:10px 12px;"><span class="tag new">High</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding:10px 12px; color:#fff; font-weight:500;">Notifications &amp; Reminders</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Medium</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Hive settings box, NotificationService</td>
+          <td style="padding:10px 12px;"><span class="tag new">High</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding:10px 12px; color:#fff; font-weight:500;">Task Defaults</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Low</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Hive settings box only</td>
+          <td style="padding:10px 12px;"><span class="tag stub">Medium</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding:10px 12px; color:#fff; font-weight:500;">Account</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Low</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Consolidate SignInPage + AuthProvider</td>
+          <td style="padding:10px 12px;"><span class="tag stub">Medium</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding:10px 12px; color:#fff; font-weight:500;">Calendar &amp; Sync Config</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Medium</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">New Hive keys, hook into sync services</td>
+          <td style="padding:10px 12px;"><span class="tag low">Low</span></td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding:10px 12px; color:#fff; font-weight:500;">Data &amp; Privacy</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Medium-High</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Export logic, GoogleDriveService</td>
+          <td style="padding:10px 12px;"><span class="tag low">Low</span></td>
+        </tr>
+        <tr>
+          <td style="padding:10px 12px; color:#fff; font-weight:500;">About</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Very Low</td>
+          <td style="padding:10px 12px; color: var(--text-muted);">Static content only</td>
+          <td style="padding:10px 12px;"><span class="tag low">Low</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════ FOOTER ═══════════════════════════════ -->
+<footer>
+  Generated for <strong>To-Do App</strong> · Flutter · Material 3
+</footer>
+
+</body>
+</html>

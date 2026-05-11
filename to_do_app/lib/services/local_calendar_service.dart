@@ -349,8 +349,7 @@ class LocalCalendarService {
       print('➕ Added new task: ${event.title}');
     }
 
-    db.updateDataBase();
-    db.loadData();
+    await db.updateDataBase();
     print(
       '✅ Imported $importedCount new events, updated $updatedCount existing ones.',
     );
@@ -635,8 +634,7 @@ class LocalCalendarService {
     }
 
     print(" localCalTasks after import ${db.localCalTasks}");
-    db.updateDataBase();
-    db.loadData();
+    await db.updateDataBase();
     print(
       '✅ Imported $importedCount new events, updated $updatedCount existing ones.',
     );

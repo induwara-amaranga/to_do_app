@@ -1,26 +1,24 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-//import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:to_do_app/data/database.dart';
 import 'package:to_do_app/pages/calendar_page.dart';
-//import 'package:timezone/data/latest.dart' as tz;
-//import 'package:timezone/timezone.dart' as tz;
-
 import 'package:to_do_app/pages/filtered_tasks_page.dart';
 import 'package:to_do_app/pages/calender_sync_page.dart';
 import 'package:to_do_app/pages/manage_categories_page.dart';
 import 'package:to_do_app/pages/saved_timetables_page.dart';
 import 'package:to_do_app/pages/statistics_page.dart';
+import 'package:to_do_app/pages/settings_page.dart';
 import 'package:to_do_app/pages/task_page.dart';
 import 'package:to_do_app/providers/calendar_sync_provider.dart';
 import 'package:to_do_app/providers/file_search_provider.dart';
 import 'package:to_do_app/providers/file_sort_provider.dart';
+import 'package:to_do_app/providers/data_provider.dart';
 import 'package:to_do_app/providers/view_provider.dart';
-import 'package:to_do_app/services/google_drive_service.dart'
-    show GoogleDriveService;
 import 'package:to_do_app/services/google_sign.dart';
 import 'package:to_do_app/services/outlook_sign.dart';
 import 'package:to_do_app/themes/theme_provider.dart';
@@ -36,84 +34,63 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final ToDoDataBase db = ToDoDataBase();
 String? path;
 
-tz.Location? findLocalLocation() {
-  final now = DateTime.now();
-  final offset = now.timeZoneOffset;
-
-  for (final name in tz.timeZoneDatabase.locations.keys) {
-    final location = tz.getLocation(name);
-    final locNow = tz.TZDateTime.now(location);
-
-    if (locNow.timeZoneOffset == offset) {
-      return location;
-    }
-  }
-  print("Could not find local timezone location");
-  return tz.getLocation('UTC'); // fallback
-}
-
 Future<void> initLocalTimeZone() async {
-  // 1. Initialize the timezone database
-  //tz.initializeTimeZones();
-
-  if (db.settings["timeZone"] == "") {
-    //final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
-    // 2. Get device timezone (e.g., "Asia/Colombo")
-    //print("Device timezone: $timeZoneName");
-    // 3. Get tz Location
-    final localLocation = findLocalLocation()!;
-    tz.setLocalLocation(localLocation);
-    //print("Local timezone set: ${tz.local.name}");
-    print("Local timezone set in tz package: ${tz.local.name}");
-  } else {
-    // final String timeZoneName = db.settings["timeZone"];
-    // // 2. Get device timezone (e.g., "Asia/Colombo")
-    // print("Device timezone: $timeZoneName");
-    // // 3. Get tz Location
-    // final tz.Location location = tz.getLocation(timeZoneName);
-
-    // // 4. Set as local
-    // tz.setLocalLocation(location);
-    // print("Local timezone set in tz package (from db): ${tz.local.name}");
+  try {
+    final tzInfo = await FlutterTimezone.getLocalTimezone();
+    final tzName = tzInfo.identifier;
+    final location = tz.getLocation(tzName);
+    tz.setLocalLocation(location);
+    db.settings["timeZone"] = tzName;
+    db.saveSettings();
+    if (kDebugMode) print("Local timezone set: ${tz.local.name}");
+  } catch (e) {
+    if (kDebugMode) print("Failed to detect timezone: $e");
+    tz.setLocalLocation(tz.getLocation('UTC'));
   }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   tz.initializeTimeZones();
-  // F-06: key read from --dart-define=SUPABASE_ANON_KEY or AppConfig default
+
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabaseAnonKey,
   );
+
   await Hive.initFlutter();
-  var box = await Hive.openBox("mybox");
-  Box fileMetaBox = await Hive.openBox("fileMetaBox");
-  path = box.path!;
-  await box.clear();
-  final _myBox = Hive.box("mybox");
-  if (_myBox.get("TODOLIST") == null && _myBox.get("CATEGORIES") == null) {
+  await Hive.openBox('mybox'); // legacy box for one-time migration
+  await db.openBoxes();
+  await db.clearLocalCalTasks();
+  await db.clearGoogleCalTasks();
+  await db.clearOutlookCalTasks();
+  path = db.boxPath;
+
+  if (db.isFreshInstall) {
     db.createInitialData();
+    await db.updateDataBase();
   } else {
     db.loadData();
   }
-  // WidgetsFlutterBinding.ensureInitialized();
+  db.runMigrations();
+
   await GoogleAuthService.initApp();
   await OutlookAuthService.initialize();
 
-  // F-07: initialise AuthProvider with resolved sign-in state
   final authProvider = AuthProvider(
     isGoogleSignedIn: GoogleAuthService.currentUser != null,
     isOutlookSignedIn: OutlookAuthService.accessToken != null,
     displayName: GoogleAuthService.currentUser?.displayName ?? '',
   );
 
-  // TEST NOTIFICATION
   try {
     await NotificationService.init();
   } catch (e) {
-    print("----------Notification error: $e");
+    if (kDebugMode) print("Notification init error: $e");
   }
+
+  await initLocalTimeZone();
+
   runApp(
     MultiProvider(
       providers: [
@@ -125,18 +102,12 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FileSearchProvider()),
         ChangeNotifierProvider(create: (_) => FileSortProvider()),
         ChangeNotifierProvider(create: (_) => ViewProvider()),
-        // F-07: central auth state provider
         ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider(create: (_) => DataProvider(db)),
       ],
       child: const MyApp(),
     ),
   );
-  await initLocalTimeZone();
-  try {
-    // await NotificationService.init();
-  } catch (e) {
-    print("failed to detect time zome $e");
-  }
 }
 
 class MyApp extends StatelessWidget {
@@ -157,6 +128,7 @@ class MyApp extends StatelessWidget {
         '/calendarSync': (context) => CalenderSyncPage(db: db),
         '/statistics': (context) => StatisticsPage(db: db),
         '/calendar': (context) => CalendarPage(db: db),
+        '/settings': (context) => SettingsPage(db: db),
         '/filteredTasks':
             (context) => Filteredtaskspage(
               deleteFunction: null,

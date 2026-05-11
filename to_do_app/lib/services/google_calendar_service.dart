@@ -391,8 +391,7 @@ class GoogleCalendarService {
       importedCount++;
     }
 
-    db.updateDataBase();
-    db.loadData();
+    await db.updateDataBase();
     print(
       '✅ Imported $importedCount events into google DB.updated $updatedCount events.',
     );
@@ -503,8 +502,7 @@ class GoogleCalendarService {
       print('➕ Added new task: ${event.summary}');
     }
 
-    db.updateDataBase();
-    db.loadData();
+    await db.updateDataBase();
 
     print(
       '✅ Imported $importedCount new events, updated $updatedCount existing ones.',

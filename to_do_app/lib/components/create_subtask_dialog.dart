@@ -90,8 +90,8 @@ class _AddSubTaskDialogState extends State<AddSubTaskDialog> {
             if (_nameController.text.isNotEmpty) {
               widget.onAdd({
                 "name": _nameController.text,
-                "dueDate": _subDueDate,
-                "dueTime": _subDueTime,
+                "dueDate": _subDueDate?.toIso8601String(),
+                "dueTime": _subDueTime?.toIso8601String(),
                 "completed": false,
               });
               Navigator.pop(context);

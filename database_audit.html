@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Database Architecture Audit — To-Do App</title>
+  <style>
+    :root {
+      --bg:        #0f0f1a;
+      --surface:   #181828;
+      --surface2:  #20203a;
+      --surface3:  #2a2a44;
+      --border:    rgba(255,255,255,0.07);
+      --text:      #e2e2f0;
+      --muted:     #8080a8;
+      --primary:   #FFB31A;
+      --red:       #ff4d4d;
+      --orange:    #ff8c42;
+      --yellow:    #f5c518;
+      --green:     #36d399;
+      --blue:      #4b9eff;
+      --purple:    #b06bff;
+      --radius:    10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* ─── Header ─────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #0a0a18 0%, #12122a 60%, #1a0a2e 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 52px 48px 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,77,77,0.08) 0%, transparent 70%);
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,77,77,0.15);
+      border: 1px solid rgba(255,77,77,0.3);
+      color: #ff6b6b;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 20px;
+      margin-bottom: 18px;
+    }
+    header h1 { font-size: 30px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+    header p  { color: var(--muted); font-size: 14px; max-width: 580px; }
+    .meta-row {
+      display: flex; gap: 28px; flex-wrap: wrap;
+      margin-top: 24px; padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .meta-item { font-size: 12px; color: var(--muted); }
+    .meta-item strong { color: var(--primary); }
+
+    /* ─── Score banner ────────────────────────────────────── */
+    .score-banner {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .score-item {
+      padding: 20px 24px;
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+    .score-item:last-child { border-right: none; }
+    .score-item .score-val {
+      font-size: 28px; font-weight: 800; line-height: 1;
+      margin-bottom: 4px;
+    }
+    .score-item .score-label { font-size: 11px; color: var(--muted); letter-spacing: 0.5px; }
+    .score-item.bad  .score-val { color: var(--red); }
+    .score-item.warn .score-val { color: var(--orange); }
+    .score-item.ok   .score-val { color: var(--yellow); }
+    .score-item.good .score-val { color: var(--green); }
+
+    /* ─── Layout ──────────────────────────────────────────── */
+    .container { max-width: 1080px; margin: 0 auto; padding: 48px 40px; }
+
+    .section-label {
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--primary);
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 22px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    h2 { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+    h3 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    p  { font-size: 14px; color: var(--muted); margin-bottom: 10px; }
+
+    .spacer { height: 44px; }
+
+    /* ─── Issue cards ─────────────────────────────────────── */
+    .issue {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .issue-sev {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 80px; padding: 4px 0;
+      border-radius: 6px;
+      font-size: 10px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .sev-critical { background: rgba(255,77,77,0.15);  color: var(--red);    border: 1px solid rgba(255,77,77,0.3); }
+    .sev-high     { background: rgba(255,140,66,0.15); color: var(--orange); border: 1px solid rgba(255,140,66,0.3); }
+    .sev-medium   { background: rgba(245,197,24,0.12); color: var(--yellow); border: 1px solid rgba(245,197,24,0.25); }
+    .sev-low      { background: rgba(54,211,153,0.1);  color: var(--green);  border: 1px solid rgba(54,211,153,0.2); }
+
+    .issue-body h3 { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+    .issue-body p  { margin: 0; font-size: 13px; }
+
+    /* ─── Code blocks ─────────────────────────────────────── */
+    pre, code {
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    }
+    pre {
+      background: #0a0a14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 18px;
+      font-size: 12px;
+      overflow-x: auto;
+      color: #c9d1d9;
+      margin: 12px 0 0;
+      line-height: 1.7;
+    }
+    code {
+      background: rgba(255,255,255,0.06);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12px;
+      color: #b0c4de;
+    }
+    .kw  { color: #ff79c6; }
+    .str { color: #f1fa8c; }
+    .cm  { color: #555580; font-style: italic; }
+    .cls { color: #8be9fd; }
+    .fn  { color: #50fa7b; }
+    .nm  { color: #bd93f9; }
+    .pk  { color: #ffb86c; }
+
+    /* ─── Before/After diff ───────────────────────────────── */
+    .diff-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    @media (max-width: 700px) { .diff-grid { grid-template-columns: 1fr; } }
+    .diff-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .diff-label.before { color: var(--red); }
+    .diff-label.after  { color: var(--green); }
+    .diff-before { border-left: 3px solid var(--red); }
+    .diff-after  { border-left: 3px solid var(--green); }
+
+    /* ─── Schema table ────────────────────────────────────── */
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13px; margin-bottom: 0;
+    }
+    th {
+      text-align: left; padding: 10px 12px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+    .idx { color: var(--purple); font-family: monospace; font-weight: 700; }
+    .type-bad  { color: var(--red);    font-size: 11px; }
+    .type-ok   { color: var(--yellow); font-size: 11px; }
+    .type-good { color: var(--green);  font-size: 11px; }
+
+    /* ─── Card boxes ──────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      margin-bottom: 16px;
+    }
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 700px) { .card-grid { grid-template-columns: 1fr; } }
+
+    /* ─── Improvement steps ───────────────────────────────── */
+    .step {
+      display: flex; gap: 16px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: flex-start;
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--primary);
+      color: #1a1000;
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-body h3 { color: #fff; font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .step-body p  { margin: 0; font-size: 13px; }
+
+    /* ─── Tags ────────────────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px;
+      letter-spacing: 0.5px;
+      margin-right: 4px;
+    }
+    .tag-effort-low    { background: rgba(54,211,153,0.12); color: var(--green);  border: 1px solid rgba(54,211,153,0.2); }
+    .tag-effort-med    { background: rgba(245,197,24,0.12); color: var(--yellow); border: 1px solid rgba(245,197,24,0.25); }
+    .tag-effort-high   { background: rgba(255,77,77,0.12);  color: var(--red);    border: 1px solid rgba(255,77,77,0.25); }
+    .tag-impact-low    { background: rgba(144,144,176,0.12); color: var(--muted); border: 1px solid rgba(144,144,176,0.2); }
+    .tag-impact-high   { background: rgba(75,158,255,0.12); color: var(--blue);   border: 1px solid rgba(75,158,255,0.25); }
+
+    /* ─── Warning callout ─────────────────────────────────── */
+    .callout {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 14px 0;
+      font-size: 13px;
+    }
+    .callout-red    { background: rgba(255,77,77,0.08); border-left: 3px solid var(--red); color: #ff9f9f; }
+    .callout-yellow { background: rgba(245,197,24,0.08); border-left: 3px solid var(--yellow); color: #f5e27a; }
+    .callout-green  { background: rgba(54,211,153,0.08); border-left: 3px solid var(--green);  color: #7de8c4; }
+    .callout strong { font-weight: 700; }
+
+    /* ─── Footer ──────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 28px 40px;
+      text-align: center;
+      font-size: 12px; color: var(--muted);
+    }
+    footer strong { color: var(--primary); }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header>
+  <div class="badge">⚠ Architecture Audit</div>
+  <h1>Database Architecture Report</h1>
+  <p>A full audit of the local persistence layer, in-memory data model, and storage patterns
+     in the Flutter To-Do App — with prioritised recommendations to reach industry standards.</p>
+  <div class="meta-row">
+    <div class="meta-item">File: <strong>lib/data/database.dart</strong></div>
+    <div class="meta-item">Engine: <strong>Hive (single box)</strong></div>
+    <div class="meta-item">Schema: <strong>List&lt;dynamic&gt; positional array</strong></div>
+    <div class="meta-item">Date: <strong>May 2026</strong></div>
+  </div>
+</header>
+
+<!-- ═══════════ SCORE STRIP ═══════════ -->
+<div class="score-banner">
+  <div class="score-item bad">
+    <div class="score-val">2 / 10</div>
+    <div class="score-label">Type Safety</div>
+  </div>
+  <div class="score-item bad">
+    <div class="score-val">3 / 10</div>
+    <div class="score-label">Data Integrity</div>
+  </div>
+  <div class="score-item warn">
+    <div class="score-val">5 / 10</div>
+    <div class="score-label">Persistence</div>
+  </div>
+  <div class="score-item bad">
+    <div class="score-val">2 / 10</div>
+    <div class="score-label">Maintainability</div>
+  </div>
+  <div class="score-item ok">
+    <div class="score-val">6 / 10</div>
+    <div class="score-label">Performance</div>
+  </div>
+  <div class="score-item bad">
+    <div class="score-val">1 / 10</div>
+    <div class="score-label">Scalability</div>
+  </div>
+</div>
+
+<!-- ═══════════ BODY ═══════════ -->
+<div class="container">
+
+  <!-- ─── 1. Critical Issues ─── -->
+  <div class="section-label">01 — Critical Issues</div>
+
+  <div class="issue">
+    <div class="issue-sev sev-critical">Critical</div>
+    <div class="issue-body">
+      <h3>Box is cleared on every app startup — all local data is lost on relaunch</h3>
+      <p>
+        <code>main.dart:93</code> calls <code>await box.clear()</code> unconditionally
+        <em>before</em> the <code>TODOLIST == null</code> check at line 95.
+        Because the box is always empty after clear, the condition is always true,
+        <code>createInitialData()</code> is always called, and <code>loadData()</code>
+        is never reached. Any task the user creates is gone the next time they open the app.
+      </p>
+      <pre><span class="cm">// main.dart — current (broken)</span>
+<span class="kw">var</span> box = <span class="kw">await</span> Hive.<span class="fn">openBox</span>(<span class="str">"mybox"</span>);
+<span class="kw">await</span> box.<span class="fn">clear</span>();                           <span class="cm">// ← WIPES everything</span>
+<span class="kw">if</span> (_myBox.<span class="fn">get</span>(<span class="str">"TODOLIST"</span>) == <span class="kw">null</span>) {      <span class="cm">// ← always null now</span>
+  db.<span class="fn">createInitialData</span>();
+} <span class="kw">else</span> {
+  db.<span class="fn">loadData</span>();                             <span class="cm">// ← unreachable</span>
+}
+
+<span class="cm">// Fix: remove the clear() call</span>
+<span class="kw">var</span> box = <span class="kw">await</span> Hive.<span class="fn">openBox</span>(<span class="str">"mybox"</span>);
+<span class="kw">if</span> (box.<span class="fn">get</span>(<span class="str">"TODOLIST"</span>) == <span class="kw">null</span>) {
+  db.<span class="fn">createInitialData</span>();
+  db.<span class="fn">updateDataBase</span>();
+} <span class="kw">else</span> {
+  db.<span class="fn">loadData</span>();
+}</pre>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-critical">Critical</div>
+    <div class="issue-body">
+      <h3>Task is a positional <code>List&lt;dynamic&gt;</code> with 18 magic indices</h3>
+      <p>
+        Every task is stored and accessed as an untyped list. There is no documentation of what
+        each index means. Code all over the codebase uses raw literals like <code>task[0]</code>,
+        <code>task[13]</code>, <code>task[17]</code>. A single field insertion anywhere in the list
+        silently corrupts every piece of code that reads the list — with no compile-time error.
+      </p>
+      <div class="card" style="margin-top:12px; padding: 0; overflow:hidden;">
+        <table>
+          <thead>
+            <tr>
+              <th>Index</th>
+              <th>Meaning (reverse-engineered)</th>
+              <th>Stored type</th>
+              <th>Actual type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="idx">[0]</td><td>Task name</td><td class="type-bad">dynamic</td><td>String</td></tr>
+            <tr><td class="idx">[1]</td><td>Completed flag</td><td class="type-bad">dynamic</td><td>bool</td></tr>
+            <tr><td class="idx">[2]</td><td>Note</td><td class="type-bad">dynamic</td><td>String?</td></tr>
+            <tr><td class="idx">[3]</td><td>Due date (yyyy-MM-dd UTC)</td><td class="type-bad">dynamic</td><td>String</td></tr>
+            <tr><td class="idx">[4]</td><td>Due time (HH:mm UTC)</td><td class="type-bad">dynamic</td><td>String</td></tr>
+            <tr><td class="idx">[5]</td><td>Category</td><td class="type-bad">dynamic</td><td>String</td></tr>
+            <tr><td class="idx">[6]</td><td>Priority (High/Medium/Low)</td><td class="type-bad">dynamic</td><td>String (should be enum)</td></tr>
+            <tr><td class="idx">[7]</td><td>Repeat type</td><td class="type-bad">dynamic</td><td>String (should be enum)</td></tr>
+            <tr><td class="idx">[8]</td><td>Reminder amount</td><td class="type-bad">dynamic</td><td>int</td></tr>
+            <tr><td class="idx">[9]</td><td>Reminder type (min/hr/day)</td><td class="type-bad">dynamic</td><td>String (should be enum)</td></tr>
+            <tr><td class="idx">[10]</td><td>Starred — stored as <em>String</em> "true"/"false"</td><td class="type-bad">dynamic</td><td>String (should be bool)</td></tr>
+            <tr><td class="idx">[11]</td><td>Created-at timestamp (UTC)</td><td class="type-bad">dynamic</td><td>String</td></tr>
+            <tr><td class="idx">[12]</td><td>Task UUID</td><td class="type-bad">dynamic</td><td>String</td></tr>
+            <tr><td class="idx">[13]</td><td>Subtasks (List of Maps)</td><td class="type-bad">dynamic</td><td>List&lt;Map&gt;?</td></tr>
+            <tr><td class="idx">[14]</td><td>Unknown</td><td class="type-bad">dynamic</td><td>?</td></tr>
+            <tr><td class="idx">[15]</td><td>Calendar event ID (native)</td><td class="type-bad">dynamic</td><td>String</td></tr>
+            <tr><td class="idx">[16]</td><td>Nested list [calendarName, eventId]</td><td class="type-bad">dynamic</td><td>List (nested!)</td></tr>
+            <tr><td class="idx">[17]</td><td>Source (google/outlook/local)</td><td class="type-bad">dynamic</td><td>String</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout callout-red" style="margin-top:10px;">
+        <strong>Notable:</strong> <code>task[10]</code> is starred, but it's stored as the String
+        <code>"true"</code> / <code>"false"</code> — not a <code>bool</code>. Every reader must do
+        <code>task[10] == "true"</code> instead of just <code>task[10]</code>.
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 2. High Issues ─── -->
+  <div class="section-label">02 — High Severity</div>
+
+  <div class="issue">
+    <div class="issue-sev sev-high">High</div>
+    <div class="issue-body">
+      <h3>Everything in a single Hive box with string keys</h3>
+      <p>
+        All data — tasks, calendar events, categories, settings, account details, sync state —
+        is crammed into one box named <code>"mybox"</code>. Key collisions are one typo away,
+        there is no namespacing, and you cannot open/close a box independently.
+        Industry standard is one box per entity type (or use a proper embedded database).
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-high">High</div>
+    <div class="issue-body">
+      <h3><code>loadData()</code> duplicates the logic of all individual <code>loadXxx()</code> methods</h3>
+      <p>
+        The class has both <code>loadData()</code> (a combined loader) and separate
+        <code>loadToDoList()</code>, <code>loadGoogleCalTasks()</code>, etc.
+        The same parse-from-Hive code is written twice for every entity.
+        Any bug fix must be applied in two places — and currently they are already out of sync:
+        <code>loadData()</code> inline-reads the box while the individual methods call the box
+        via the getter. They will diverge further over time.
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-high">High</div>
+    <div class="issue-body">
+      <h3><code>updateDataBase()</code> rewrites every key on every change</h3>
+      <p>
+        A single field update (e.g. marking one task complete) calls <code>updateDataBase()</code>
+        which serialises and writes <em>all</em> tasks, all calendar events, all categories,
+        settings, and account details in one pass. On a large task list this is unnecessary I/O.
+        Each collection should be saved independently via its targeted save method.
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-high">High</div>
+    <div class="issue-body">
+      <h3>Global singleton <code>db</code> passed via prop-drilling through every screen</h3>
+      <p>
+        <code>main.dart</code> declares <code>final ToDoDataBase db = ToDoDataBase()</code>
+        at the top level. It is then passed as a constructor argument through
+        <code>TaskPage → MyDrawer → CalendarPage → StatisticsPage → CalenderSyncPage</code> etc.
+        There is a <code>Provider</code> system in place but <code>db</code> itself is not
+        provided — making testing and widget composition difficult.
+      </p>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 3. Medium Issues ─── -->
+  <div class="section-label">03 — Medium Severity</div>
+
+  <div class="issue">
+    <div class="issue-sev sev-medium">Medium</div>
+    <div class="issue-body">
+      <h3>No data migration strategy</h3>
+      <p>
+        If you add a new field to the task schema (e.g. an index [18]), all existing stored tasks
+        will be missing that slot. There is no version number in the stored data and no migration
+        step. A schema change will silently produce <code>RangeError</code> on all existing installs.
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-medium">Medium</div>
+    <div class="issue-body">
+      <h3>Three parallel task lists with no shared schema enforcement</h3>
+      <p>
+        <code>toDoList</code>, <code>googleCalTasks</code>, <code>localCalTasks</code>, and
+        <code>outlookCalTasks</code> are all <code>List&lt;List&lt;dynamic&gt;&gt;</code>
+        but their index maps are <em>different</em>. <code>SyncTile</code> reads
+        <code>task[15]</code> as the calendar event ID and <code>task[17]</code> as the source,
+        which is calendar-task-specific. Mixing these up causes silent wrong-data bugs.
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-medium">Medium</div>
+    <div class="issue-body">
+      <h3>Timezone detection is half-implemented and silently falls back to UTC</h3>
+      <p>
+        <code>createInitialData()</code> has an empty <code>if (settings["timeZone"] == "") { }</code>
+        block. <code>initLocalTimeZone()</code> in <code>main.dart</code> uses a brute-force loop
+        over all timezone names matching the current UTC offset — which is wrong for half-hour
+        offsets and ambiguous in DST transitions. The native timezone plugin is commented out.
+        This means users in non-UTC zones can get silently incorrect reminder times.
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-medium">Medium</div>
+    <div class="issue-body">
+      <h3><code>accountDetails</code> duplicates state already in <code>AuthProvider</code></h3>
+      <p>
+        User name and profile picture are stored both in Hive (<code>accountDetails</code>) and
+        in <code>AuthProvider</code> / <code>GoogleAuthService.currentUser</code>.
+        These two sources can become inconsistent (e.g. user changes their Google profile name).
+        There should be one authoritative source — the auth service — and Hive should only cache
+        a token, not profile metadata.
+      </p>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 4. Low Issues ─── -->
+  <div class="section-label">04 — Low Severity / Code Quality</div>
+
+  <div class="issue">
+    <div class="issue-sev sev-low">Low</div>
+    <div class="issue-body">
+      <h3>23+ <code>print()</code> statements left in production code</h3>
+      <p>
+        <code>database.dart</code> and <code>main.dart</code> print full task lists, calendar
+        event arrays, and debug state on every load and save cycle.
+        In release builds this is dead code. It also leaks personal task data to device logs.
+        Replace with a conditional logger (<code>kDebugMode</code> guard or the
+        <code>logger</code> package).
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-low">Low</div>
+    <div class="issue-body">
+      <h3><code>int a = 5;</code> at the top of <code>date_time_utils.dart</code></h3>
+      <p>
+        An unused global variable <code>int a = 5</code> is declared at the module level.
+        This is a stale debug artifact and should be deleted.
+      </p>
+    </div>
+  </div>
+
+  <div class="issue">
+    <div class="issue-sev sev-low">Low</div>
+    <div class="issue-body">
+      <h3>Large blocks of commented-out code throughout</h3>
+      <p>
+        <code>database.dart</code>, <code>main.dart</code>, and <code>task_page.dart</code>
+        contain dozens of commented-out lines (old task schema, disabled timezone plugin, old
+        notification tests). These should live in git history, not in source.
+      </p>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 5. Current Architecture Diagram ─── -->
+  <div class="section-label">05 — Current Architecture (What's Actually Happening)</div>
+
+  <pre style="font-size:12px; line-height:2;">
+  ┌─────────────────────────────────────────────────────────┐
+  │                     main.dart                           │
+  │  final ToDoDataBase db = ToDoDataBase()  ← global       │
+  │  await box.clear()  ← WIPES ALL DATA                    │
+  │  if (TODOLIST == null)  ← always true after clear()     │
+  │    db.createInitialData()  ← empty list every launch    │
+  └────────────────────┬────────────────────────────────────┘
+                       │ passed as constructor arg
+       ┌───────────────┼──────────────────┐
+       ↓               ↓                  ↓
+  TaskPage         CalendarPage      StatisticsPage
+       │               │
+       └──── db.updateDataBase() ← rewrites ALL keys in Hive
+
+  ┌─────────────────────────────────────────────────────────┐
+  │                  Hive "mybox"   (one box)               │
+  │  "TODOLIST"          → List&lt;List&lt;dynamic&gt;&gt;  18 fields  │
+  │  "GOOGLE_CAL_TASKS"  → List&lt;List&lt;dynamic&gt;&gt;             │
+  │  "LOCAL_CAL_TASKS"   → List&lt;List&lt;dynamic&gt;&gt;             │
+  │  "OUTLOOK_CAL_TASKS" → List&lt;List&lt;dynamic&gt;&gt;             │
+  │  "CATEGORIES"        → List&lt;String&gt;                    │
+  │  "VIEW_ONLY_CALENDARS" → Map&lt;String, List&gt;             │
+  │  "SYNC_TO_CALENDARS" → Map&lt;String, dynamic&gt;            │
+  │  "SETTINGS"          → Map&lt;String, dynamic&gt;  1 key     │
+  │  "ACCOUNT"           → Map&lt;String, dynamic&gt;            │
+  └─────────────────────────────────────────────────────────┘
+  </pre>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 6. Target Architecture ─── -->
+  <div class="section-label">06 — Target Architecture (Industry Standard)</div>
+
+  <pre style="font-size:12px; line-height:2;">
+  ┌─────────────────────────────────────────────────────────┐
+  │               Repository Layer                          │
+  │  TaskRepository          (CRUD for Task model)          │
+  │  CalendarEventRepository (CRUD for CalendarEvent)       │
+  │  SettingsRepository      (typed get/set per key)        │
+  └──────────────┬──────────────────────────────────────────┘
+                 │ read/write
+  ┌──────────────▼──────────────────────────────────────────┐
+  │               Hive (per-entity boxes)                   │
+  │  Box&lt;Task&gt;   "tasks"            ← TypeAdapter          │
+  │  Box&lt;CalendarEvent&gt; "calEvents" ← TypeAdapter          │
+  │  Box&lt;String&gt; "categories"                              │
+  │  Box&lt;dynamic&gt; "settings"                               │
+  └─────────────────────────────────────────────────────────┘
+                 │
+  ┌──────────────▼──────────────────────────────────────────┐
+  │               State / Provider Layer                    │
+  │  TaskProvider  ← ChangeNotifier, wraps TaskRepository   │
+  │  (replaces global db singleton)                         │
+  └─────────────────────────────────────────────────────────┘
+  </pre>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 7. How to Fix ─── -->
+  <div class="section-label">07 — Prioritised Improvements</div>
+
+  <div class="card">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h3>Remove <code>box.clear()</code> from startup <span class="tag tag-effort-low">15 min</span> <span class="tag tag-impact-high">Critical fix</span></h3>
+        <p>Delete line 93 in <code>main.dart</code>. This is the single most impactful change —
+        it restores persistence immediately without any other refactor.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h3>Define a <code>Task</code> model class with a Hive TypeAdapter <span class="tag tag-effort-med">2–4 hrs</span> <span class="tag tag-impact-high">High impact</span></h3>
+        <p>Replace <code>List&lt;dynamic&gt;</code> with a typed class. Hive's code-gen
+        (<code>hive_generator</code>) produces a TypeAdapter automatically from annotations.
+        All index-based access becomes named field access with compiler-checked types.</p>
+        <pre><span class="pk">@HiveType</span>(typeId: <span class="nm">0</span>)
+<span class="kw">class</span> <span class="cls">Task</span> <span class="kw">extends</span> <span class="cls">HiveObject</span> {
+  <span class="pk">@HiveField</span>(<span class="nm">0</span>) <span class="kw">late</span> <span class="cls">String</span>  name;
+  <span class="pk">@HiveField</span>(<span class="nm">1</span>) <span class="kw">late</span> <span class="cls">bool</span>    completed;
+  <span class="pk">@HiveField</span>(<span class="nm">2</span>)       <span class="cls">String</span>? note;
+  <span class="pk">@HiveField</span>(<span class="nm">3</span>)       <span class="cls">String</span>? dueDateUtc;   <span class="cm">// yyyy-MM-dd</span>
+  <span class="pk">@HiveField</span>(<span class="nm">4</span>)       <span class="cls">String</span>? dueTimeUtc;   <span class="cm">// HH:mm</span>
+  <span class="pk">@HiveField</span>(<span class="nm">5</span>) <span class="kw">late</span> <span class="cls">String</span>  category;
+  <span class="pk">@HiveField</span>(<span class="nm">6</span>) <span class="kw">late</span> <span class="cls">String</span>  priority;      <span class="cm">// or Priority enum</span>
+  <span class="pk">@HiveField</span>(<span class="nm">7</span>)       <span class="cls">String</span>? repeatType;
+  <span class="pk">@HiveField</span>(<span class="nm">8</span>)       <span class="cls">int</span>?    reminderAmount;
+  <span class="pk">@HiveField</span>(<span class="nm">9</span>)       <span class="cls">String</span>? reminderType;
+  <span class="pk">@HiveField</span>(<span class="nm">10</span>) <span class="kw">late</span> <span class="cls">bool</span>   isStarred;     <span class="cm">// was String "true"/"false"</span>
+  <span class="pk">@HiveField</span>(<span class="nm">11</span>) <span class="kw">late</span> <span class="cls">String</span> createdAt;
+  <span class="pk">@HiveField</span>(<span class="nm">12</span>) <span class="kw">late</span> <span class="cls">String</span> id;
+  <span class="pk">@HiveField</span>(<span class="nm">13</span>)       <span class="cls">List</span>&lt;<span class="cls">SubTask</span>&gt;? subtasks;
+  <span class="pk">@HiveField</span>(<span class="nm">14</span>)       <span class="cls">String</span>? calendarName;
+  <span class="pk">@HiveField</span>(<span class="nm">15</span>)       <span class="cls">String</span>? nativeEventId;
+  <span class="pk">@HiveField</span>(<span class="nm">16</span>)       <span class="cls">String</span>? remoteEventId;
+  <span class="pk">@HiveField</span>(<span class="nm">17</span>) <span class="kw">late</span> <span class="cls">String</span> source;         <span class="cm">// google/outlook/local</span>
+}</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h3>Separate Hive boxes per entity type <span class="tag tag-effort-low">1 hr</span> <span class="tag tag-impact-high">High impact</span></h3>
+        <p>Open one box per collection. This isolates failures, allows lazy loading, and makes
+        intent clear.</p>
+        <pre><span class="kw">await</span> Hive.<span class="fn">openBox</span>&lt;<span class="cls">Task</span>&gt;(<span class="str">'tasks'</span>);
+<span class="kw">await</span> Hive.<span class="fn">openBox</span>&lt;<span class="cls">CalendarEvent</span>&gt;(<span class="str">'calendarEvents'</span>);
+<span class="kw">await</span> Hive.<span class="fn">openBox</span>&lt;<span class="cls">String</span>&gt;(<span class="str">'categories'</span>);
+<span class="kw">await</span> Hive.<span class="fn">openBox</span>(<span class="str">'settings'</span>);
+<span class="kw">await</span> Hive.<span class="fn">openBox</span>(<span class="str">'fileMeta'</span>);</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h3>Replace global singleton with a <code>TaskProvider</code> <span class="tag tag-effort-med">3–5 hrs</span> <span class="tag tag-impact-high">High impact</span></h3>
+        <p>
+          Register <code>TaskProvider extends ChangeNotifier</code> in <code>MultiProvider</code>
+          alongside your existing providers. It holds the task list, calls Hive under the hood,
+          and calls <code>notifyListeners()</code> on every mutation.
+          All widgets consume it via <code>context.watch&lt;TaskProvider&gt;()</code> —
+          no more prop-drilling.
+        </p>
+        <pre><span class="kw">class</span> <span class="cls">TaskProvider</span> <span class="kw">extends</span> <span class="cls">ChangeNotifier</span> {
+  <span class="kw">final</span> _box = Hive.box&lt;<span class="cls">Task</span>&gt;(<span class="str">'tasks'</span>);
+
+  <span class="cls">List</span>&lt;<span class="cls">Task</span>&gt; <span class="kw">get</span> tasks =&gt; _box.values.toList();
+
+  <span class="kw">Future</span>&lt;<span class="kw">void</span>&gt; <span class="fn">addTask</span>(<span class="cls">Task</span> t) <span class="kw">async</span> {
+    <span class="kw">await</span> _box.<span class="fn">put</span>(t.id, t);
+    <span class="fn">notifyListeners</span>();
+  }
+
+  <span class="kw">Future</span>&lt;<span class="kw">void</span>&gt; <span class="fn">completeTask</span>(<span class="cls">String</span> id) <span class="kw">async</span> {
+    <span class="kw">final</span> t = _box.<span class="fn">get</span>(id);
+    <span class="kw">if</span> (t == <span class="kw">null</span>) <span class="kw">return</span>;
+    t.completed = <span class="kw">true</span>;
+    <span class="kw">await</span> t.<span class="fn">save</span>();               <span class="cm">// HiveObject.save() — only writes this record</span>
+    <span class="fn">notifyListeners</span>();
+  }
+}</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-body">
+        <h3>Add a schema version + migration helper <span class="tag tag-effort-med">2 hrs</span></h3>
+        <p>
+          Store a <code>schemaVersion</code> key in the settings box. On startup, compare it
+          to the current app version. If lower, run the appropriate migration function before
+          loading data. This makes future field additions safe.
+        </p>
+        <pre><span class="kw">const int</span> <span class="nm">kCurrentSchema</span> = <span class="nm">2</span>;
+
+<span class="kw">void</span> <span class="fn">migrateIfNeeded</span>() {
+  <span class="kw">final</span> stored = settingsBox.<span class="fn">get</span>(<span class="str">'schemaVersion'</span>, defaultValue: <span class="nm">1</span>);
+  <span class="kw">if</span> (stored &lt; <span class="nm">2</span>) <span class="fn">_migrateV1ToV2</span>();
+  settingsBox.<span class="fn">put</span>(<span class="str">'schemaVersion'</span>, <span class="nm">kCurrentSchema</span>);
+}</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">6</div>
+      <div class="step-body">
+        <h3>Fix the timezone detection <span class="tag tag-effort-low">30 min</span></h3>
+        <p>
+          Un-comment and re-add the <code>flutter_timezone</code> package (already in the
+          commented imports). It calls the OS directly and returns the correct IANA name
+          (<code>"Asia/Colombo"</code>) without any offset-matching loop.
+        </p>
+        <pre><span class="kw">import</span> <span class="str">'package:flutter_timezone/flutter_timezone.dart'</span>;
+
+<span class="kw">final</span> String tzName = <span class="kw">await</span> FlutterTimezone.<span class="fn">getLocalTimezone</span>();
+<span class="kw">final</span> location = tz.<span class="fn">getLocation</span>(tzName);
+tz.<span class="fn">setLocalLocation</span>(location);</pre>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">7</div>
+      <div class="step-body">
+        <h3>Remove all debug <code>print()</code> calls — guard with <code>kDebugMode</code> <span class="tag tag-effort-low">30 min</span></h3>
+        <p>
+          Wrap any log you want to keep in a debug guard so they compile away in release builds
+          and stop leaking user data to device logs.
+        </p>
+        <pre><span class="kw">import</span> <span class="str">'package:flutter/foundation.dart'</span>;
+
+<span class="kw">if</span> (kDebugMode) <span class="fn">print</span>(<span class="str">'Tasks: $toDoList'</span>);</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 8. Before / After ─── -->
+  <div class="section-label">08 — Before / After: Task Access</div>
+
+  <div class="diff-grid">
+    <div>
+      <div class="diff-label before">Before — magic indices, no safety</div>
+      <pre class="diff-before"><span class="cm">// What does task[10] mean? No idea.</span>
+<span class="kw">bool</span> starred = task[<span class="nm">10</span>] == <span class="str">"true"</span>;
+<span class="cls">String</span> name  = task[<span class="nm">0</span>] <span class="kw">as</span> <span class="cls">String</span>;
+<span class="cls">String</span> source = task[<span class="nm">17</span>] ?? <span class="str">''</span>;
+
+<span class="cm">// Add a field at index 5?</span>
+<span class="cm">// Every task[6], task[7]… silently shifts.</span></pre>
+    </div>
+    <div>
+      <div class="diff-label after">After — typed model, compile-time safe</div>
+      <pre class="diff-after"><span class="cm">// Self-documenting, type-checked</span>
+<span class="kw">bool</span> starred  = task.isStarred;
+<span class="cls">String</span> name   = task.name;
+<span class="cls">String</span> source = task.source;
+
+<span class="cm">// Add a new HiveField? Existing data</span>
+<span class="cm">// fills in null/default. No corruption.</span></pre>
+    </div>
+  </div>
+
+  <div class="diff-grid" style="margin-top:14px;">
+    <div>
+      <div class="diff-label before">Before — full rewrite on every change</div>
+      <pre class="diff-before"><span class="cm">// Completing one task:</span>
+db.toDoList[i][<span class="nm">1</span>] = <span class="kw">true</span>;
+db.<span class="fn">updateDataBase</span>();
+<span class="cm">// ↑ Writes ALL tasks + ALL calendars</span>
+<span class="cm">// + categories + settings + account</span></pre>
+    </div>
+    <div>
+      <div class="diff-label after">After — surgical single-record write</div>
+      <pre class="diff-after"><span class="cm">// Completing one task:</span>
+task.completed = <span class="kw">true</span>;
+<span class="kw">await</span> task.<span class="fn">save</span>();
+<span class="cm">// ↑ Hive writes only this one record</span>
+<span class="cm">// Everything else untouched</span></pre>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- ─── 9. Summary table ─── -->
+  <div class="section-label">09 — Summary</div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Severity</th>
+          <th>Effort</th>
+          <th>Fix</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>box.clear()</code> on startup wipes all data</td>
+          <td style="color:var(--red); font-weight:700;">Critical</td>
+          <td style="color:var(--green);">15 min</td>
+          <td>Delete one line in main.dart</td>
+        </tr>
+        <tr>
+          <td>Task is <code>List&lt;dynamic&gt;</code> with 18 magic indices</td>
+          <td style="color:var(--red); font-weight:700;">Critical</td>
+          <td style="color:var(--yellow);">2–4 hrs</td>
+          <td>Define <code>Task</code> model + Hive TypeAdapter</td>
+        </tr>
+        <tr>
+          <td>Everything in a single Hive box</td>
+          <td style="color:var(--orange); font-weight:700;">High</td>
+          <td style="color:var(--green);">1 hr</td>
+          <td>Open one box per entity type</td>
+        </tr>
+        <tr>
+          <td>Duplicated load logic in loadData() vs loadXxx()</td>
+          <td style="color:var(--orange); font-weight:700;">High</td>
+          <td style="color:var(--green);">30 min</td>
+          <td>Delete the duplicates, keep individual methods</td>
+        </tr>
+        <tr>
+          <td>updateDataBase() rewrites all keys on every change</td>
+          <td style="color:var(--orange); font-weight:700;">High</td>
+          <td style="color:var(--yellow);">1 hr</td>
+          <td>Use HiveObject.save() for single-record writes</td>
+        </tr>
+        <tr>
+          <td>Global db singleton + prop-drilling</td>
+          <td style="color:var(--orange); font-weight:700;">High</td>
+          <td style="color:var(--yellow);">3–5 hrs</td>
+          <td>TaskProvider via existing Provider setup</td>
+        </tr>
+        <tr>
+          <td>No schema version / migration</td>
+          <td style="color:var(--yellow); font-weight:700;">Medium</td>
+          <td style="color:var(--yellow);">2 hrs</td>
+          <td>Store schemaVersion, run migrations on startup</td>
+        </tr>
+        <tr>
+          <td>Timezone detection incomplete + broken</td>
+          <td style="color:var(--yellow); font-weight:700;">Medium</td>
+          <td style="color:var(--green);">30 min</td>
+          <td>Restore flutter_timezone plugin call</td>
+        </tr>
+        <tr>
+          <td>accountDetails duplicated in Hive + AuthProvider</td>
+          <td style="color:var(--yellow); font-weight:700;">Medium</td>
+          <td style="color:var(--green);">1 hr</td>
+          <td>Remove Hive copy, read only from auth service</td>
+        </tr>
+        <tr>
+          <td>starred stored as String "true"/"false"</td>
+          <td style="color:var(--yellow); font-weight:700;">Medium</td>
+          <td style="color:var(--green);">30 min</td>
+          <td>Migrate to bool (fixed by TypeAdapter step)</td>
+        </tr>
+        <tr>
+          <td>23+ debug print() calls in production</td>
+          <td style="color:var(--green); font-weight:700;">Low</td>
+          <td style="color:var(--green);">30 min</td>
+          <td>Wrap in kDebugMode or delete</td>
+        </tr>
+        <tr>
+          <td>Commented-out code + <code>int a = 5</code></td>
+          <td style="color:var(--green); font-weight:700;">Low</td>
+          <td style="color:var(--green);">15 min</td>
+          <td>Delete</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout callout-yellow" style="margin-top:20px;">
+    <strong>Recommended starting order:</strong>
+    Step 1 (remove box.clear) gives you working persistence today.
+    Steps 2 + 3 (Task model + separate boxes) are the architectural foundation that makes all other
+    improvements straightforward. Do those before adding any new features.
+  </div>
+
+</div>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  Generated for <strong>To-Do App</strong> · Flutter · Hive · May 2026
+</footer>
+
+</body>
+</html>

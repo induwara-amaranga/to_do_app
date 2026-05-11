@@ -390,8 +390,8 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                                         ),
                                       ),
                                       subtitle: Text(
-                                        "${DateTimeUtilsHelper.formatDate(sub['dueDate'])}  "
-                                        "${DateTimeUtilsHelper.formatTime(sub['dueTime'], format: 'hh:mm a')}",
+                                        "${DateTimeUtilsHelper.formatDate(sub['dueDate'] is String ? DateTime.tryParse(sub['dueDate']) : sub['dueDate'] as DateTime?)}  "
+                                        "${DateTimeUtilsHelper.formatTime(sub['dueTime'] is String ? DateTime.tryParse(sub['dueTime']) : sub['dueTime'] as DateTime?, format: 'hh:mm a')}",
                                       ),
                                       trailing: IconButton(
                                         icon: const Icon(Icons.delete),

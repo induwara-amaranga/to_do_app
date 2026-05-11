@@ -23,8 +23,10 @@ class _EditSubTaskDialogState extends State<EditSubTaskDialog> {
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.subtask["name"]);
-    _subDueDate = widget.subtask["dueDate"];
-    _subDueTime = widget.subtask["dueTime"];
+    final rawDate = widget.subtask["dueDate"];
+    final rawTime = widget.subtask["dueTime"];
+    _subDueDate = rawDate is String ? DateTime.tryParse(rawDate) : rawDate as DateTime?;
+    _subDueTime = rawTime is String ? DateTime.tryParse(rawTime) : rawTime as DateTime?;
   }
 
   @override
@@ -97,8 +99,8 @@ class _EditSubTaskDialogState extends State<EditSubTaskDialog> {
             if (_nameController.text.isNotEmpty) {
               widget.onSave({
                 "name": _nameController.text,
-                "dueDate": _subDueDate,
-                "dueTime": _subDueTime,
+                "dueDate": _subDueDate?.toIso8601String(),
+                "dueTime": _subDueTime?.toIso8601String(),
                 "completed": widget.subtask["completed"],
               });
               Navigator.pop(context);

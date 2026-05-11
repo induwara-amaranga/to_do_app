@@ -50,14 +50,10 @@ class _MyWidgetState extends State<SignInPage> {
       appBar: AppBar(
         actions: [
           PopupMenuButton<String>(
-            onSelected: (value)async {
+            onSelected: (value) async {
               print("Selected: $value");
               if (value == 'signOut') {
                 await GoogleAuthService.signOut();
-                widget.db.accountDetails["userName"] = "none";
-                widget.db.accountDetails["profilePicture"] = "none";
-                widget.db.updateDataBase();
-
                 setState(() {
                   isSignedIn = false;
                 });
@@ -140,7 +136,7 @@ class _MyWidgetState extends State<SignInPage> {
                 },
                 child: Image.asset(
                   scale: 1.5,
-                  'assets/images/android_light_rd_SI@2x.png',
+                  'assets/images/google/android_light_rd_SI@2x.png',
                   key: const ValueKey('google_image'),
 
                   fit: BoxFit.cover,
@@ -308,7 +304,7 @@ class _MyWidgetState extends State<SignInPage> {
               children: [
                 Image.asset(
                   scale: 2.5,
-                  'assets/images/logo_drive_2020q4_color_2x_web_64dp.png',
+                  'assets/images/google/logo_drive_2020q4_color_2x_web_64dp.png',
                   key: const ValueKey('drive_image'),
 
                   fit: BoxFit.cover,

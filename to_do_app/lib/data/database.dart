@@ -1,258 +1,343 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
-import 'package:to_do_app/utils/date_time_utils.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:to_do_app/models/calendar_event.dart';
+import 'package:to_do_app/models/sub_task.dart';
+import 'package:to_do_app/models/task.dart';
 
-//import 'package:flutter_native_timezone_updated/flutter_native_timezone.dart';
-//import 'package:flutter_native_timezone/flutter_timezone.dart';
+const int kCurrentSchemaVersion = 3;
 
+/// Hybrid persistence layer.
+/// - On disk:
+///     • [Task] (typeId 0)            in box `tasks`
+///     • [CalendarEvent] (typeId 2)   in boxes `localCalTasks`, `googleCalTasks`, `outlookCalTasks`
+///     • [SubTask] (typeId 1)         embedded inside Task / CalendarEvent
+/// - In memory: kept as `List<List<dynamic>>` so legacy index-based callers
+///   (`task[5]`, `task[10]`, …) continue to work unchanged. Conversion
+///   happens at the load/save boundary.
+///
+/// Calendar events are intentionally a *separate* model from Task because
+/// their positional schema differs (single-String eventId at index 16 vs.
+/// list-of-IDs for tasks). Conflating them caused round-trip data loss in
+/// schema v2.
 class ToDoDataBase {
+  static const _boxTasks = 'tasks';
+  static const _boxLocalCal = 'localCalTasks';
+  static const _boxGoogleCal = 'googleCalTasks';
+  static const _boxOutlookCal = 'outlookCalTasks';
+  static const _boxMeta = 'meta';
+
+  List<List<dynamic>> toDoList = [];
   List<List<dynamic>> localCalTasks = [];
   List<List<dynamic>> googleCalTasks = [];
   List<List<dynamic>> outlookCalTasks = [];
-  List<List<dynamic>> toDoList = [];
   List<String> categories = [];
+  List<String> hidingCategories = [];
 
-  // In-memory Sets
   Map<String, Set<String>> viewOnlyCalendars = {
-    //View only
-    "local": <String>{},
-    "google": <String>{},
-    "outlook": <String>{},
+    'local': <String>{},
+    'google': <String>{},
+    'outlook': <String>{},
   };
 
   Map<String, dynamic> syncToCalendars = {
-    //ToDOList
-    "local": "none",
-    "google": "none",
-    "outlook": "none",
+    'local': 'none',
+    'google': 'none',
+    'outlook': 'none',
   };
 
-  Map<String, dynamic> settings = {"timeZone": ""};
+  Map<String, dynamic> settings = {'timeZone': ''};
 
-  Map<String, dynamic> accountDetails = {
-    "userName": "none",
-    "profilePicture": "none",
-  };
+  Box<Task> get _tasksBox => Hive.box<Task>(_boxTasks);
+  Box<CalendarEvent> get _localCalBox => Hive.box<CalendarEvent>(_boxLocalCal);
+  Box<CalendarEvent> get _googleCalBox =>
+      Hive.box<CalendarEvent>(_boxGoogleCal);
+  Box<CalendarEvent> get _outlookCalBox =>
+      Hive.box<CalendarEvent>(_boxOutlookCal);
+  Box get _metaBox => Hive.box(_boxMeta);
 
-  Box get _mybox => Hive.box("mybox");
+  String get boxPath => _metaBox.path ?? '';
 
-  // Future<void> getDeviceTimeZone() async {
-  //   final timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
-  //   print("Device time zone: $timeZoneName"); // e.g. "Asia/Colombo"
-  // }
+  bool get isFreshInstall =>
+      _metaBox.get('schemaVersion') == null && _tasksBox.isEmpty;
+
+  Future<void> openBoxes() async {
+    // Register all adapters first so any subsequent openBox call can decode.
+    if (!Hive.isAdapterRegistered(0)) Hive.registerAdapter(TaskAdapter());
+    if (!Hive.isAdapterRegistered(1)) Hive.registerAdapter(SubTaskAdapter());
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(CalendarEventAdapter());
+    }
+
+    // Open meta first so we can read schemaVersion before opening typed boxes.
+    await Hive.openBox(_boxMeta);
+
+    // Pre-flight: schemas <3 stored cal tasks as Task (typeId 0). We've moved
+    // them to CalendarEvent (typeId 2), so the on-disk types are incompatible.
+    // Delete the old boxes so the next openBox creates them fresh.
+    // Data is recoverable from the legacy `mybox` migration (if present) or
+    // by re-running calendar sync.
+    final stored = (_metaBox.get('schemaVersion') as int?) ?? 1;
+    if (stored < 3) {
+      await Hive.deleteBoxFromDisk(_boxLocalCal);
+      await Hive.deleteBoxFromDisk(_boxGoogleCal);
+      await Hive.deleteBoxFromDisk(_boxOutlookCal);
+    }
+
+    await Hive.openBox<Task>(_boxTasks);
+    await Hive.openBox<CalendarEvent>(_boxLocalCal);
+    await Hive.openBox<CalendarEvent>(_boxGoogleCal);
+    await Hive.openBox<CalendarEvent>(_boxOutlookCal);
+    await Hive.openBox('fileMetaBox');
+  }
 
   void createInitialData() {
-    DateTime dueDateTime = DateTime.now().toUtc().add(Duration(minutes: 1));
+    toDoList = [];
     localCalTasks = [];
     googleCalTasks = [];
     outlookCalTasks = [];
-    toDoList = [
-      // [
-      //   "Take a break",
-      //   false,
-      //   "task note",
-      //   DateTimeUtilsHelper.formatDate(dueDateTime),
-      //   DateTimeUtilsHelper.formatTime(dueDateTime),
-      //   "None",
-      //   "High",
-      //   "daily",
-      //   0,
-      //   "none",
-      //   "false",
-      //   DateTime.now().toUtc().toString(),
-      //   "id-example",
-      //   [
-      //     {
-      //       "name": "sub 1",
-      //       "dueDate": null,
-      //       "dueTime": null,
-      //       "completed": false,
-      //     },
-      //   ],
-      //   "",
-      //   "",
-      //   "",
-      //   "initial",
-      // ],
-    ];
-    categories = ["None", "Work", "Personal", "Study", "Others"];
-    if (settings["timeZone"] == "") {
-      //get local time zone
-    }
+    categories = ['None', 'Work', 'Personal', 'Study', 'Others'];
   }
 
-  void saveToDoList() => _mybox.put("TODOLIST", toDoList);
-  void saveCategories() => _mybox.put("CATEGORIES", categories);
-  void saveSettings() => _mybox.put("SETTINGS", settings);
-  void saveAccountDetails() => _mybox.put("ACCOUNT", accountDetails);
-  void saveLocalCalTasks() => _mybox.put("LOCAL_CAL_TASKS", localCalTasks);
-  void saveGoogleCalTasks() => _mybox.put("GOOGLE_CAL_TASKS", googleCalTasks);
-  void saveOutlookCalTasks() =>
-      _mybox.put("OUTLOOK_CAL_TASKS", outlookCalTasks);
+  // ─── Save ───────────────────────────────────────────────────────────────
+
+  Future<void> _replaceTaskBox(Box<Task> box, List<List<dynamic>> rows) async {
+    final typed = rows.map(Task.fromList).toList();
+    await box.clear();
+    await box.addAll(typed);
+  }
+
+  Future<void> _replaceCalBox(
+    Box<CalendarEvent> box,
+    List<List<dynamic>> rows,
+  ) async {
+    final typed = rows.map(CalendarEvent.fromList).toList();
+    await box.clear();
+    await box.addAll(typed);
+  }
+
+  Future<void> saveToDoList() => _replaceTaskBox(_tasksBox, toDoList);
+
+  Future<void> saveLocalCalTasks() {
+    if (kDebugMode) print('💾 saveLocalCalTasks: ${localCalTasks.length} rows');
+    return _replaceCalBox(_localCalBox, localCalTasks);
+  }
+
+  Future<void> saveGoogleCalTasks() =>
+      _replaceCalBox(_googleCalBox, googleCalTasks);
+  Future<void> saveOutlookCalTasks() =>
+      _replaceCalBox(_outlookCalBox, outlookCalTasks);
+
+  void saveCategories() => _metaBox.put('categories', categories);
+  void saveHidingCategories() =>
+      _metaBox.put('hidingCategories', hidingCategories);
+  void saveSettings() => _metaBox.put('settings', settings);
   void saveSyncToCalendars() =>
-      _mybox.put("SYNC_TO_CALENDARS", syncToCalendars);
+      _metaBox.put('syncToCalendars', syncToCalendars);
 
   void saveViewOnlyCalendars() {
-    _mybox.put("VIEW_ONLY_CALENDARS", {
-      "local": viewOnlyCalendars["local"]!.toList(),
-      "google": viewOnlyCalendars["google"]!.toList(),
-      "outlook": viewOnlyCalendars["outlook"]!.toList(),
+    _metaBox.put('viewOnlyCalendars', {
+      'local': viewOnlyCalendars['local']!.toList(),
+      'google': viewOnlyCalendars['google']!.toList(),
+      'outlook': viewOnlyCalendars['outlook']!.toList(),
     });
   }
 
-  // ─── Load Methods ────────────────────────────────────────────────────────
+  // ─── Clear ──────────────────────────────────────────────────────────────
 
-  void loadToDoList() {
-    final data = _mybox.get("TODOLIST");
-    if (data is List) {
-      toDoList = data.map((item) => item as List<dynamic>).toList();
-    }
+  Future<void> clearToDoList() async {
+    toDoList = [];
+    await _tasksBox.clear();
+    if (kDebugMode) print('🧹 Cleared toDoList');
   }
 
+  Future<void> clearLocalCalTasks() async {
+    localCalTasks = [];
+    await _localCalBox.clear();
+    if (kDebugMode) print('🧹 Cleared localCalTasks');
+  }
+
+  Future<void> clearGoogleCalTasks() async {
+    googleCalTasks = [];
+    await _googleCalBox.clear();
+    if (kDebugMode) print('🧹 Cleared googleCalTasks');
+  }
+
+  Future<void> clearOutlookCalTasks() async {
+    outlookCalTasks = [];
+    await _outlookCalBox.clear();
+    if (kDebugMode) print('🧹 Cleared outlookCalTasks');
+  }
+
+  Future<void> clearAllCalTasks() async {
+    await clearLocalCalTasks();
+    await clearGoogleCalTasks();
+    await clearOutlookCalTasks();
+  }
+
+  // ─── Load ───────────────────────────────────────────────────────────────
+
+  List<List<dynamic>> _readTaskBox(Box<Task> box) =>
+      box.values.map((t) => t.toList()).toList();
+
+  List<List<dynamic>> _readCalBox(Box<CalendarEvent> box) =>
+      box.values.map((e) => e.toList()).toList();
+
+  void loadToDoList() => toDoList = _readTaskBox(_tasksBox);
+  void loadLocalCalTasks() {
+    localCalTasks = _readCalBox(_localCalBox);
+    if (kDebugMode) print('📂 loadLocalCalTasks  ${localCalTasks}');
+  }
+
+  void loadGoogleCalTasks() => googleCalTasks = _readCalBox(_googleCalBox);
+  void loadOutlookCalTasks() => outlookCalTasks = _readCalBox(_outlookCalBox);
+
   void loadCategories() {
-    final data = _mybox.get("CATEGORIES");
+    final data = _metaBox.get('categories');
     if (data is List) categories = data.cast<String>();
   }
 
+  void loadHidingCategories() {
+    final data = _metaBox.get('hidingCategories');
+    if (data is List) hidingCategories = data.cast<String>();
+  }
+
   void loadSettings() {
-    final data = _mybox.get("SETTINGS");
-    if (data is Map)
+    final data = _metaBox.get('settings');
+    if (data is Map) {
       settings = Map<String, dynamic>.from(data.cast<String, dynamic>());
-  }
-
-  void loadAccountDetails() {
-    final data = _mybox.get("ACCOUNT");
-    if (data is Map)
-      accountDetails = Map<String, dynamic>.from(data.cast<String, dynamic>());
-  }
-
-  void loadLocalCalTasks() {
-    final data = _mybox.get("LOCAL_CAL_TASKS");
-    if (data is List)
-      localCalTasks = data.map((item) => item as List<dynamic>).toList();
-  }
-
-  void loadGoogleCalTasks() {
-    final data = _mybox.get("GOOGLE_CAL_TASKS");
-    if (data is List)
-      googleCalTasks = data.map((item) => item as List<dynamic>).toList();
-  }
-
-  void loadOutlookCalTasks() {
-    final data = _mybox.get("OUTLOOK_CAL_TASKS");
-    if (data is List)
-      outlookCalTasks = data.map((item) => item as List<dynamic>).toList();
+    }
   }
 
   void loadSyncToCalendars() {
-    final data = _mybox.get("SYNC_TO_CALENDARS");
-    if (data is Map)
+    final data = _metaBox.get('syncToCalendars');
+    if (data is Map) {
       syncToCalendars = Map<String, dynamic>.from(data.cast<String, dynamic>());
+    }
   }
 
   void loadViewOnlyCalendars() {
-    final data = _mybox.get("VIEW_ONLY_CALENDARS");
+    final data = _metaBox.get('viewOnlyCalendars');
     if (data is Map) {
       viewOnlyCalendars = {
-        "local": (data["local"] ?? []).cast<String>().toSet(),
-        "google": (data["google"] ?? []).cast<String>().toSet(),
-        "outlook": (data["outlook"] ?? []).cast<String>().toSet(),
+        'local': ((data['local'] as List?) ?? const []).cast<String>().toSet(),
+        'google':
+            ((data['google'] as List?) ?? const []).cast<String>().toSet(),
+        'outlook':
+            ((data['outlook'] as List?) ?? const []).cast<String>().toSet(),
       };
     }
   }
 
   void loadData() {
-    print("🗄️ Loading database...");
-    // Load to-do list
-    final storedToDo = _mybox.get("TODOLIST");
-
-    if (storedToDo is List) {
-      toDoList = storedToDo.map((item) => item as List<dynamic>).toList();
-    }
-
-    print("ToDo Tasks: $toDoList");
-
-    // Load categories
-    final storedCategories = _mybox.get("CATEGORIES");
-    if (storedCategories is List) {
-      categories = storedCategories.cast<String>();
-    }
-
-    // Load viewOnlyCalendars (convert back to Sets)
-    final storedFromCalendars = _mybox.get("VIEW_ONLY_CALENDARS");
-    if (storedFromCalendars is Map) {
-      viewOnlyCalendars = {
-        "local": (storedFromCalendars["local"] ?? []).cast<String>().toSet(),
-        "google": (storedFromCalendars["google"] ?? []).cast<String>().toSet(),
-        "outlook":
-            (storedFromCalendars["outlook"] ?? []).cast<String>().toSet(),
-      };
-    }
-
-    // Load syncToCalendars
-    final storedToCalendars = _mybox.get("SYNC_TO_CALENDARS");
-    if (storedToCalendars is Map) {
-      syncToCalendars = Map<String, String>.from(
-        storedToCalendars.cast<String, String>(),
+    loadToDoList();
+    loadLocalCalTasks();
+    loadGoogleCalTasks();
+    loadOutlookCalTasks();
+    loadCategories();
+    loadHidingCategories();
+    loadSettings();
+    loadSyncToCalendars();
+    loadViewOnlyCalendars();
+    if (kDebugMode) {
+      print(
+        '🗄️ Database loaded: ${toDoList.length} tasks, '
+        '${localCalTasks.length}/${googleCalTasks.length}/'
+        '${outlookCalTasks.length} cal events',
       );
     }
-
-    final storedSettings = _mybox.get("SETTINGS");
-    if (storedSettings is Map) {
-      settings = Map<String, dynamic>.from(
-        storedSettings.cast<String, dynamic>(),
-      );
-    }
-    print("Loaded settings: $settings");
-    final storedAccount = _mybox.get("ACCOUNT");
-    if (storedAccount is Map) {
-      accountDetails = Map<String, dynamic>.from(
-        storedAccount.cast<String, dynamic>(),
-      );
-    }
-
-    // ✅ FIX: Load calendar tasks correctly
-    final storedLocalCalTasks = _mybox.get("LOCAL_CAL_TASKS");
-    if (storedLocalCalTasks is List) {
-      localCalTasks =
-          storedLocalCalTasks.map((item) => item as List<dynamic>).toList();
-    }
-    final storedGoogleCalTasks = _mybox.get("GOOGLE_CAL_TASKS");
-    if (storedGoogleCalTasks is List) {
-      googleCalTasks =
-          storedGoogleCalTasks.map((item) => item as List<dynamic>).toList();
-    }
-    final storedOutlookCalTasks = _mybox.get("OUTLOOK_CAL_TASKS");
-    if (storedOutlookCalTasks is List) {
-      outlookCalTasks =
-          storedOutlookCalTasks.map((item) => item as List<dynamic>).toList();
-    }
-    print("🗄️ Database loaded");
   }
 
-  void updateDataBase() {
-    // Convert Sets to Lists for Hive storage
-    final hiveviewOnlyCalendars = {
-      "local": viewOnlyCalendars["local"]!.toList(),
-      "google": viewOnlyCalendars["google"]!.toList(),
-      "outlook": viewOnlyCalendars["outlook"]!.toList(),
-    };
+  Future<void> updateDataBase() async {
+    await saveToDoList();
+    await saveLocalCalTasks();
+    await saveGoogleCalTasks();
+    await saveOutlookCalTasks();
+    saveCategories();
+    saveHidingCategories();
+    saveSettings();
+    saveSyncToCalendars();
+    saveViewOnlyCalendars();
+    if (kDebugMode) print('🗄️ Database updated');
+  }
 
-    _mybox.put("TODOLIST", toDoList);
-    _mybox.put("CATEGORIES", categories);
-    _mybox.put("VIEW_ONLY_CALENDARS", hiveviewOnlyCalendars);
-    _mybox.put("SYNC_TO_CALENDARS", syncToCalendars);
-    _mybox.put("LOCAL_CAL_TASKS", localCalTasks);
-    _mybox.put("GOOGLE_CAL_TASKS", googleCalTasks);
-    _mybox.put("OUTLOOK_CAL_TASKS", outlookCalTasks);
-    _mybox.put("SETTINGS", settings);
-    _mybox.put("ACCOUNT", accountDetails);
+  // ─── Migration ──────────────────────────────────────────────────────────
 
-    print("🗄️ Database updated");
-    print("viewOnlyCalendars (in-memory Sets): $viewOnlyCalendars");
-    print("viewOnlyCalendars (Hive Lists): $hiveviewOnlyCalendars");
-    print(toDoList);
-    print("✅local ===> $localCalTasks");
-    print("✅google===> $googleCalTasks");
-    print("✅outlook===> $outlookCalTasks");
+  void runMigrations() {
+    final stored = (_metaBox.get('schemaVersion') as int?) ?? 1;
+    if (stored < kCurrentSchemaVersion) {
+      if (stored < 2) _migrateLegacyMyBox();
+      // v2 → v3 work was done in openBoxes() (cal boxes were deleted there).
+      _metaBox.put('schemaVersion', kCurrentSchemaVersion);
+      if (kDebugMode) {
+        print('🗄️ Migrated database $stored → $kCurrentSchemaVersion');
+      }
+    }
+  }
+
+  void _migrateLegacyMyBox() {
+    if (!Hive.isBoxOpen('mybox')) return;
+    final legacy = Hive.box('mybox');
+    if (legacy.isEmpty) return;
+
+    List<List<dynamic>> readRows(String key) {
+      final raw = legacy.get(key);
+      if (raw is! List) return [];
+      return raw.whereType<List>().map((e) => List<dynamic>.from(e)).toList();
+    }
+
+    final legacyToDo = readRows('TODOLIST');
+    final legacyLocal = readRows('LOCAL_CAL_TASKS');
+    final legacyGoogle = readRows('GOOGLE_CAL_TASKS');
+    final legacyOutlook = readRows('OUTLOOK_CAL_TASKS');
+
+    if (legacyToDo.isNotEmpty) {
+      toDoList = legacyToDo;
+      saveToDoList();
+    }
+    if (legacyLocal.isNotEmpty) {
+      localCalTasks = legacyLocal;
+      saveLocalCalTasks();
+    }
+    if (legacyGoogle.isNotEmpty) {
+      googleCalTasks = legacyGoogle;
+      saveGoogleCalTasks();
+    }
+    if (legacyOutlook.isNotEmpty) {
+      outlookCalTasks = legacyOutlook;
+      saveOutlookCalTasks();
+    }
+
+    final cats = legacy.get('CATEGORIES');
+    if (cats is List) {
+      categories = cats.cast<String>();
+      saveCategories();
+    }
+
+    final s = legacy.get('SETTINGS');
+    if (s is Map) {
+      settings = Map<String, dynamic>.from(s.cast<String, dynamic>());
+      saveSettings();
+    }
+
+    final sync = legacy.get('SYNC_TO_CALENDARS');
+    if (sync is Map) {
+      syncToCalendars = Map<String, dynamic>.from(sync.cast<String, dynamic>());
+      saveSyncToCalendars();
+    }
+
+    final view = legacy.get('VIEW_ONLY_CALENDARS');
+    if (view is Map) {
+      viewOnlyCalendars = {
+        'local': ((view['local'] as List?) ?? const []).cast<String>().toSet(),
+        'google':
+            ((view['google'] as List?) ?? const []).cast<String>().toSet(),
+        'outlook':
+            ((view['outlook'] as List?) ?? const []).cast<String>().toSet(),
+      };
+      saveViewOnlyCalendars();
+    }
+
+    legacy.clear();
   }
 }

@@ -397,8 +397,7 @@ class OutlookCalendarService {
       importedCount++;
     }
 
-    db.updateDataBase();
-    db.loadData();
+    await db.updateDataBase();
 
     print(
       '✅ Imported $importedCount new events, updated $updatedCount existing ones.',
@@ -527,8 +526,7 @@ class OutlookCalendarService {
       importedCount++;
     }
 
-    db.updateDataBase();
-    db.loadData();
+    await db.updateDataBase();
 
     print(
       '✅ Imported $importedCount view-only events, updated $updatedCount existing ones.',

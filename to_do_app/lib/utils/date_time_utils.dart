@@ -1,10 +1,6 @@
-// utils/date_utils.dart
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/timezone.dart' as tz;
-
-//print("DateTimeUtilsHelper loaded ${tz.local.name}");
-
-int a = 5;
 
 class DateTimeUtilsHelper {
   // Parse String → DateTime
@@ -88,9 +84,8 @@ class DateTimeUtilsHelper {
     return localTzDateTime.toUtc();
   }
 
-  /// Converts  DateTime with UTC values (or any DateTime) to tz.local time
+  /// Converts a DateTime with UTC values (or any DateTime) to tz.local time
   static DateTime toLocalUsingTz(DateTime dateTime) {
-    print("local zone ${tz.local.name}");
     final utcTime = DateTime.utc(
       dateTime.year,
       dateTime.month,
@@ -99,14 +94,10 @@ class DateTimeUtilsHelper {
       dateTime.minute,
       dateTime.second,
     );
-    print("utc time $utcTime");
-
-    // Wrap the DateTime in tz.TZDateTime using tz.local
     final localTzDateTime = tz.TZDateTime.from(utcTime, tz.local);
-    print("localTzDateTime $localTzDateTime");
-
-    // Return a normal Dart DateTime in local tz
-    //print("local zone 2 ${tz.local.name}");
+    if (kDebugMode) {
+      print('tz.local=${tz.local.name} utc=$utcTime → $localTzDateTime');
+    }
     return localTzDateTime;
   }
 

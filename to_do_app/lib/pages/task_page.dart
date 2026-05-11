@@ -58,7 +58,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
 
   bool _isStarred = false;
   String _selectedCategory = "None";
-  List<String> _hidingCategories = [];
+  List<String> _hidingCategories = []; // kept in sync with db.hidingCategories
 
   final _taskNameController = TextEditingController();
   final _taskNoteController = TextEditingController();
@@ -106,6 +106,8 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
   ) {
     db.categories = newCategories;
     _hidingCategories = hidingCategories;
+    db.hidingCategories = hidingCategories;
+    db.saveHidingCategories();
     _tabController.dispose();
     _tabController = TabController(
       length: _taskCategoryTabs().length,
@@ -272,6 +274,7 @@ class _TaskPageState extends State<TaskPage> with TickerProviderStateMixin {
     super.initState();
     print("task page zone: ${tz.local.name}");
     db = widget.db;
+    _hidingCategories = List<String>.from(db.hidingCategories);
 
     _remainderAmountController.text = "0";
     _tabController = TabController(
